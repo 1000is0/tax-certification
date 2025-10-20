@@ -22,7 +22,7 @@ app.use(helmet({
 }));
 
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:5173'],
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : ['http://localhost:3000', 'http://localhost:5173', 'https://tax-certification-front.vercel.app'],
   credentials: true,
   optionsSuccessStatus: 200
 };
