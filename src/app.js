@@ -43,8 +43,16 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Note: for Vercel static hosting we serve built files via vercel.json routing
+// API routes
 app.use('/api', apiRoutes);
+
+// Serve React build locally and on platforms that don't handle static routing
+const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  return res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
 
 // 404 handler for API only (static handled by platform)
 app.use('/api/*', (req, res) => {
