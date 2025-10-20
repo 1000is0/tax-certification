@@ -137,7 +137,7 @@ class TaxCredential {
         throw result.error;
       }
 
-      if (result.data.length === 0) {
+      if (!result.data || result.data.length === 0) {
         return null;
       }
 
@@ -160,7 +160,7 @@ class TaxCredential {
         throw result.error;
       }
 
-      if (result.data.length === 0) {
+      if (!result.data || result.data.length === 0) {
         return null;
       }
 
