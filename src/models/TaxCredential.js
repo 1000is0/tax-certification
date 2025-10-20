@@ -106,20 +106,32 @@ class TaxCredential {
   // 클라이언트 ID로 인증서 조회 (Make 웹훅용)
   static async findByClientId(clientId) {
     try {
-      const result = await rpc('get_credentials_by_client_id', { 
-        client_id_param: clientId 
-      });
+      console.log('Finding credential by clientId:', clientId);
+      
+      // 직접 쿼리로 변경하여 함수 오버로딩 문제 회피
+      const result = await query('tax_credentials')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .single();
+
+      console.log('Query result:', result);
 
       if (result.error) {
+        console.error('Query error:', result.error);
+        logError(result.error, { operation: 'TaxCredential.findByClientId' });
         throw result.error;
       }
 
-      if (!result.data || result.data.length === 0) {
+      if (!result.data) {
+        console.log('No credentials found for clientId:', clientId);
         return null;
       }
 
-      return new TaxCredential(result.data[0]);
+      console.log('Found credential:', result.data);
+      return new TaxCredential(result.data);
     } catch (error) {
+      console.error('Error in findByClientId:', error);
       logError(error, { operation: 'TaxCredential.findByClientId' });
       throw error;
     }
