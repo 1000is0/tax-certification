@@ -257,12 +257,17 @@ class TaxCredential {
   // 클라이언트 ID로 인증서 복호화 (Make 웹훅용)
   static async decryptByClientId(clientId, userPassword) {
     try {
+      console.log('Starting decryptByClientId for clientId:', clientId);
+      
       const credential = await this.findByClientId(clientId);
       if (!credential) {
+        console.log('Credential not found for clientId:', clientId);
         throw new Error('해당 사업자등록번호의 인증서를 찾을 수 없습니다.');
       }
 
+      console.log('Credential found, attempting decryption...');
       const decryptedData = await credential.decryptCredentials(userPassword);
+      console.log('Decryption successful');
       
       logAudit('read', 'credentials', credential.id, credential.userId, {
         action: 'decrypt_by_client_id',
@@ -274,6 +279,7 @@ class TaxCredential {
         decryptedData
       };
     } catch (error) {
+      console.error('Error in decryptByClientId:', error);
       logError(error, { operation: 'TaxCredential.decryptByClientId' });
       throw error;
     }
