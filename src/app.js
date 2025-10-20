@@ -10,6 +10,9 @@ const { logError } = require('./utils/logger');
 
 const app = express();
 
+// Vercel/Serverless 환경에서 trust proxy 설정
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
