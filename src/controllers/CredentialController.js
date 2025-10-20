@@ -1,0 +1,465 @@
+const TaxCredential = require('../models/TaxCredential');
+const User = require('../models/User');
+const { logError, logSecurity } = require('../utils/logger');
+const { validationResult } = require('express-validator');
+
+class CredentialController {
+  // 인증서 정보 저장
+  static async createCredential(req, res) {
+    try {
+      // 입력 검증
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: '입력 데이터가 유효하지 않습니다.',
+          details: errors.array()
+        });
+      }
+
+      const { 
+        clientId, 
+        certData, 
+        privateKey, 
+        certPassword, 
+        userPassword, 
+        certName, 
+        certType, 
+        expiresAt 
+      } = req.body;
+      const userId = req.user.userId;
+
+      // 사용자 확인
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          error: '사용자를 찾을 수 없습니다.',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // 인증서 정보 생성
+      const credential = await TaxCredential.create({
+        userId,
+        clientId,
+        certData,
+        privateKey,
+        certPassword,
+        certName,
+        certType,
+        expiresAt
+      }, userPassword); // 사용자 비밀번호로 암호화
+
+      logSecurity('Credential created', {
+        userId,
+        credentialId: credential.id,
+        clientId: credential.clientId,
+        certName: credential.certName,
+        ip: req.ip
+      });
+
+      res.status(201).json({
+        message: '인증서 정보가 성공적으로 저장되었습니다.',
+        credential: credential.toJSON()
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.createCredential' });
+      
+      if (error.message.includes('사업자등록번호')) {
+        return res.status(400).json({
+          error: error.message,
+          code: 'INVALID_CLIENT_ID'
+        });
+      }
+
+      res.status(500).json({
+        error: '인증서 정보 저장 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_CREATE_ERROR'
+      });
+    }
+  }
+
+  // 사용자 인증서 목록 조회
+  static async getUserCredentials(req, res) {
+    try {
+      const userId = req.user.userId;
+
+      const credentials = await TaxCredential.findByUserId(userId);
+
+      res.json({
+        credentials: credentials.map(cred => cred.toJSON())
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.getUserCredentials' });
+      res.status(500).json({
+        error: '인증서 목록 조회 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_LIST_ERROR'
+      });
+    }
+  }
+
+  // 특정 인증서 조회
+  static async getCredential(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.userId;
+
+      const credential = await TaxCredential.findActiveById(id);
+      if (!credential) {
+        return res.status(404).json({
+          error: '인증서를 찾을 수 없습니다.',
+          code: 'CREDENTIAL_NOT_FOUND'
+        });
+      }
+
+      // 본인 또는 관리자만 접근 가능
+      if (credential.userId !== userId && req.user.role !== 'admin') {
+        logSecurity('Unauthorized credential access attempt', {
+          userId,
+          credentialId: id,
+          credentialOwnerId: credential.userId,
+          ip: req.ip
+        });
+        return res.status(403).json({
+          error: '접근 권한이 없습니다.',
+          code: 'INSUFFICIENT_PERMISSION'
+        });
+      }
+
+      res.json({
+        credential: credential.toJSON()
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.getCredential' });
+      res.status(500).json({
+        error: '인증서 조회 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_GET_ERROR'
+      });
+    }
+  }
+
+  // 클라이언트 ID로 인증서 복호화 (Make 웹훅용)
+  static async decryptByClientId(req, res) {
+    try {
+      const { clientId, userPassword } = req.body;
+
+      if (!clientId || !userPassword) {
+        return res.status(400).json({
+          error: '사업자등록번호와 사용자 비밀번호가 필요합니다.',
+          code: 'MISSING_PARAMETERS'
+        });
+      }
+
+      // 사업자등록번호 형식 검증
+      if (!/^[0-9]{10}$/.test(clientId)) {
+        return res.status(400).json({
+          error: '사업자등록번호는 10자리 숫자여야 합니다.',
+          code: 'INVALID_CLIENT_ID_FORMAT'
+        });
+      }
+
+      const result = await TaxCredential.decryptByClientId(clientId, userPassword);
+
+      logSecurity('Credential decrypted by client ID', {
+        clientId,
+        credentialId: result.credential.id,
+        userId: result.credential.userId,
+        ip: req.ip
+      });
+
+      res.json({
+        message: '인증서 정보가 성공적으로 복호화되었습니다.',
+        credential: result.credential,
+        decryptedData: result.decryptedData
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.decryptByClientId' });
+      
+      if (error.message.includes('복호화')) {
+        return res.status(400).json({
+          error: '인증서 정보 복호화에 실패했습니다. 비밀번호를 확인해주세요.',
+          code: 'DECRYPTION_ERROR'
+        });
+      }
+
+      if (error.message.includes('찾을 수 없습니다')) {
+        return res.status(404).json({
+          error: error.message,
+          code: 'CREDENTIAL_NOT_FOUND'
+        });
+      }
+
+      res.status(500).json({
+        error: '인증서 복호화 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_DECRYPT_ERROR'
+      });
+    }
+  }
+
+  // 인증서 정보 수정
+  static async updateCredential(req, res) {
+    try {
+      // 입력 검증
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          error: '입력 데이터가 유효하지 않습니다.',
+          details: errors.array()
+        });
+      }
+
+      const { id } = req.params;
+      const userId = req.user.userId;
+      const { certData, privateKey, certPassword, certName, certType, expiresAt, userPassword } = req.body;
+
+      const credential = await TaxCredential.findActiveById(id);
+      if (!credential) {
+        return res.status(404).json({
+          error: '인증서를 찾을 수 없습니다.',
+          code: 'CREDENTIAL_NOT_FOUND'
+        });
+      }
+
+      // 본인 또는 관리자만 수정 가능
+      if (credential.userId !== userId && req.user.role !== 'admin') {
+        return res.status(403).json({
+          error: '접근 권한이 없습니다.',
+          code: 'INSUFFICIENT_PERMISSION'
+        });
+      }
+
+      if (!userPassword) {
+        return res.status(400).json({
+          error: '사용자 비밀번호가 필요합니다.',
+          code: 'USER_PASSWORD_REQUIRED'
+        });
+      }
+
+      // 인증서 정보 업데이트
+      const updatedCredential = await credential.update({
+        certData,
+        privateKey,
+        certPassword,
+        certName,
+        certType,
+        expiresAt
+      }, userPassword);
+
+      logSecurity('Credential updated', {
+        userId,
+        credentialId: id,
+        ip: req.ip
+      });
+
+      res.json({
+        message: '인증서 정보가 성공적으로 수정되었습니다.',
+        credential: updatedCredential.toJSON()
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.updateCredential' });
+      
+      if (error.message.includes('복호화')) {
+        return res.status(400).json({
+          error: '사용자 비밀번호가 올바르지 않습니다.',
+          code: 'INVALID_USER_PASSWORD'
+        });
+      }
+
+      res.status(500).json({
+        error: '인증서 정보 수정 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_UPDATE_ERROR'
+      });
+    }
+  }
+
+  // 인증서 비활성화
+  static async deactivateCredential(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.userId;
+
+      const credential = await TaxCredential.findActiveById(id);
+      if (!credential) {
+        return res.status(404).json({
+          error: '인증서를 찾을 수 없습니다.',
+          code: 'CREDENTIAL_NOT_FOUND'
+        });
+      }
+
+      // 본인 또는 관리자만 비활성화 가능
+      if (credential.userId !== userId && req.user.role !== 'admin') {
+        return res.status(403).json({
+          error: '접근 권한이 없습니다.',
+          code: 'INSUFFICIENT_PERMISSION'
+        });
+      }
+
+      await credential.deactivate();
+
+      logSecurity('Credential deactivated', {
+        userId,
+        credentialId: id,
+        ip: req.ip
+      });
+
+      res.json({
+        message: '인증서가 비활성화되었습니다.'
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.deactivateCredential' });
+      res.status(500).json({
+        error: '인증서 비활성화 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_DEACTIVATE_ERROR'
+      });
+    }
+  }
+
+  // 인증서 삭제
+  static async deleteCredential(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.userId;
+
+      const credential = await TaxCredential.findById(id);
+      if (!credential) {
+        return res.status(404).json({
+          error: '인증서를 찾을 수 없습니다.',
+          code: 'CREDENTIAL_NOT_FOUND'
+        });
+      }
+
+      // 본인 또는 관리자만 삭제 가능
+      if (credential.userId !== userId && req.user.role !== 'admin') {
+        return res.status(403).json({
+          error: '접근 권한이 없습니다.',
+          code: 'INSUFFICIENT_PERMISSION'
+        });
+      }
+
+      await credential.delete();
+
+      logSecurity('Credential deleted', {
+        userId,
+        credentialId: id,
+        ip: req.ip
+      });
+
+      res.json({
+        message: '인증서가 성공적으로 삭제되었습니다.'
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.deleteCredential' });
+      res.status(500).json({
+        error: '인증서 삭제 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_DELETE_ERROR'
+      });
+    }
+  }
+
+  // 인증서 연결 테스트
+  static async testConnection(req, res) {
+    try {
+      const { clientId, userPassword } = req.body;
+
+      if (!clientId || !userPassword) {
+        return res.status(400).json({
+          error: '사업자등록번호와 사용자 비밀번호가 필요합니다.',
+          code: 'MISSING_PARAMETERS'
+        });
+      }
+
+      // 사업자등록번호 형식 검증
+      if (!/^[0-9]{10}$/.test(clientId)) {
+        return res.status(400).json({
+          error: '사업자등록번호는 10자리 숫자여야 합니다.',
+          code: 'INVALID_CLIENT_ID_FORMAT'
+        });
+      }
+
+      const credential = await TaxCredential.findByClientId(clientId);
+      if (!credential) {
+        return res.status(404).json({
+          error: '해당 사업자등록번호의 인증서를 찾을 수 없습니다.',
+          code: 'CREDENTIAL_NOT_FOUND'
+        });
+      }
+
+      // 인증서 정보 복호화
+      const decryptedData = await credential.decryptCredentials(userPassword);
+
+      // 연결 테스트 (실제 구현에서는 홈택스 API 호출)
+      // 여기서는 간단한 검증만 수행
+      const isValidConnection = decryptedData.certData && decryptedData.privateKey && decryptedData.certPassword;
+
+      logSecurity('Credential connection tested', {
+        clientId,
+        credentialId: credential.id,
+        userId: credential.userId,
+        isValidConnection,
+        ip: req.ip
+      });
+
+      res.json({
+        message: isValidConnection ? '연결 테스트에 성공했습니다.' : '연결 테스트에 실패했습니다.',
+        isValidConnection,
+        credential: {
+          id: credential.id,
+          clientId: credential.clientId,
+          certName: credential.certName,
+          certType: credential.certType
+        }
+      });
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.testConnection' });
+      
+      if (error.message.includes('복호화')) {
+        return res.status(400).json({
+          error: '인증서 정보 복호화에 실패했습니다. 비밀번호를 확인해주세요.',
+          code: 'DECRYPTION_ERROR'
+        });
+      }
+
+      res.status(500).json({
+        error: '연결 테스트 중 오류가 발생했습니다.',
+        code: 'CONNECTION_TEST_ERROR'
+      });
+    }
+  }
+
+  // 모든 인증서 조회 (관리자용)
+  static async getAllCredentials(req, res) {
+    try {
+      const { page = 1, limit = 10, userId, certType, isActive, expired } = req.query;
+
+      const result = await TaxCredential.findAll(parseInt(page), parseInt(limit), {
+        userId,
+        certType,
+        isActive: isActive !== undefined ? isActive === 'true' : undefined,
+        expired
+      });
+
+      res.json(result);
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.getAllCredentials' });
+      res.status(500).json({
+        error: '인증서 목록 조회 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_LIST_ERROR'
+      });
+    }
+  }
+
+  // 인증서 통계 조회
+  static async getCredentialStats(req, res) {
+    try {
+      const stats = await TaxCredential.getStats();
+      res.json(stats);
+    } catch (error) {
+      logError(error, { operation: 'CredentialController.getCredentialStats' });
+      res.status(500).json({
+        error: '인증서 통계 조회 중 오류가 발생했습니다.',
+        code: 'CREDENTIAL_STATS_ERROR'
+      });
+    }
+  }
+}
+
+module.exports = CredentialController;
