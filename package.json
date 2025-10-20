@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "npm run build:frontend",
+    "build": "npm run build:frontend && node scripts/copy-dist-to-public.js",
     "build:frontend": "cd frontend && npm run build",
     "install:all": "npm install && cd frontend && npm install",
     "test": "jest",
