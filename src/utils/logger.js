@@ -28,30 +28,39 @@ const consoleFormat = winston.format.combine(
   })
 );
 
+// Vercel/Serverless 환경에서는 파일 시스템이 읽기 전용이므로 콘솔 출력만 사용
+const isServerless = process.env.VERCEL === '1' || process.env.SERVERLESS === 'true';
+
+const baseTransports = [];
+
+if (isServerless) {
+  baseTransports.push(new winston.transports.Console({ format: consoleFormat }));
+} else {
+  baseTransports.push(
+    new winston.transports.File({
+      filename: path.join('logs', 'error.log'),
+      level: 'error',
+      maxsize: 5242880,
+      maxFiles: 5,
+    }),
+    new winston.transports.File({
+      filename: path.join('logs', 'combined.log'),
+      maxsize: 5242880,
+      maxFiles: 5,
+    })
+  );
+}
+
 // 로거 생성
 const logger = winston.createLogger({
   level: logLevel,
   format: logFormat,
   defaultMeta: { service: 'tax-automation' },
-  transports: [
-    // 에러 로그 파일
-    new winston.transports.File({
-      filename: path.join('logs', 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    // 모든 로그 파일
-    new winston.transports.File({
-      filename: path.join('logs', 'combined.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-  ],
+  transports: baseTransports,
 });
 
 // 개발 환경에서는 콘솔에도 출력
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && !isServerless) {
   logger.add(new winston.transports.Console({
     format: consoleFormat
   }));
@@ -67,13 +76,15 @@ const securityLogger = winston.createLogger({
   level: 'info',
   format: logFormat,
   defaultMeta: { service: 'security' },
-  transports: [
-    new winston.transports.File({
-      filename: path.join('logs', 'security.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 10,
-    }),
-  ],
+  transports: isServerless
+    ? [new winston.transports.Console({ format: consoleFormat })]
+    : [
+        new winston.transports.File({
+          filename: path.join('logs', 'security.log'),
+          maxsize: 5242880,
+          maxFiles: 10,
+        }),
+      ],
 });
 
 // 감사 로그 전용 로거
@@ -81,13 +92,15 @@ const auditLogger = winston.createLogger({
   level: 'info',
   format: logFormat,
   defaultMeta: { service: 'audit' },
-  transports: [
-    new winston.transports.File({
-      filename: path.join('logs', 'audit.log'),
-      maxsize: 10485760, // 10MB
-      maxFiles: 20,
-    }),
-  ],
+  transports: isServerless
+    ? [new winston.transports.Console({ format: consoleFormat })]
+    : [
+        new winston.transports.File({
+          filename: path.join('logs', 'audit.log'),
+          maxsize: 10485760,
+          maxFiles: 20,
+        }),
+      ],
 });
 
 // 로그 헬퍼 함수들
