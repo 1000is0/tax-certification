@@ -1,4 +1,4 @@
-const { query, rpc } = require('../config/supabase');
+const { query, rpc, supabase } = require('../config/supabase');
 const encryptionService = require('../utils/encryption');
 const { logError, logAudit } = require('../utils/logger');
 
@@ -108,8 +108,9 @@ class TaxCredential {
     try {
       console.log('Finding credential by clientId:', clientId);
       
-      // 직접 쿼리로 변경하여 함수 오버로딩 문제 회피
-      const result = await query('tax_credentials')
+      // 직접 Supabase 클라이언트 사용
+      const result = await supabase
+        .from('tax_credentials')
         .select('*')
         .eq('client_id', clientId)
         .eq('is_active', true)
