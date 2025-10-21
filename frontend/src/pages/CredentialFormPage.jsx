@@ -171,19 +171,25 @@ function CredentialFormPage() {
   const handleExtractCert = async () => {
     try {
       // NX2 모듈 설치 여부 확인
-      const response = await axios.post('https://127.0.0.1:16566/?op=certlist', {}, {
+      console.log('NX2 연결 시도 중...')
+      const response = await axios.get('https://127.0.0.1:16566/?op=certlist', {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 3000
+        timeout: 3000,
+        httpsAgent: false // HTTPS 검증 무시 (자체 서명 인증서)
       })
+      
+      console.log('NX2 응답:', response.data)
       
       if (response.data && response.data.list) {
         setCertList(response.data.list)
         setCertDialogOpen(true)
+        toast.success('인증서 목록을 불러왔습니다.')
+      } else {
+        toast.error('인증서 목록을 찾을 수 없습니다.')
       }
     } catch (error) {
+      console.error('NX2 연결 오류:', error)
       // NX2 모듈이 설치되어 있지 않으면 설치 파일 다운로드
-      toast.error('인증서 추출 프로그램 설치가 필요합니다. 다운로드를 시작합니다.')
-      
       // OS 감지
       const userAgent = window.navigator.userAgent
       const platform = window.navigator.platform
@@ -215,7 +221,9 @@ function CredentialFormPage() {
       link.click()
       document.body.removeChild(link)
       
-      toast.success('설치 파일 다운로드를 시작합니다. 설치 완료 후 브라우저를 재시작하고 다시 시도해주세요.')
+      toast.success('설치 파일 다운로드를 시작합니다. 설치 완료 후 브라우저를 재시작하고 이 버튼을 다시 클릭해주세요.', {
+        duration: 6000
+      })
     }
   }
 
