@@ -195,24 +195,27 @@ function CredentialFormPage() {
       
       if (macosPlatforms.indexOf(platform) !== -1) {
         // macOS
-        downloadUrl = 'https://www.infotech.co.kr/download/ExAdapter_Web_Setup.dmg'
-        fileName = 'ExAdapter_Web_Setup.dmg'
-        toast.info('macOS용 설치 파일을 다운로드합니다.')
+        downloadUrl = '/ExAdapter_Web_Setup.pkg'
+        fileName = 'ExAdapter_Web_Setup.pkg'
       } else if (windowsPlatforms.indexOf(platform) !== -1) {
         // Windows
-        downloadUrl = 'https://www.infotech.co.kr/download/ExAdapter_Web_Setup.exe'
+        downloadUrl = '/ExAdapter_Web_Setup.exe'
         fileName = 'ExAdapter_Web_Setup.exe'
-        toast.info('Windows용 설치 파일을 다운로드합니다.')
       } else {
         // 기타 OS
         toast.error('지원하지 않는 운영체제입니다. Windows 또는 macOS에서 사용해주세요.')
         return
       }
       
-      // 설치 파일 다운로드 (새 창으로 열기)
-      window.open(downloadUrl, '_blank')
+      // 설치 파일 다운로드
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
       
-      toast.info('설치 완료 후 브라우저를 재시작하고 다시 시도해주세요.')
+      toast.success('설치 파일 다운로드를 시작합니다. 설치 완료 후 브라우저를 재시작하고 다시 시도해주세요.')
     }
   }
 
