@@ -287,9 +287,19 @@ function CredentialFormPage() {
       console.log('인증서 추출 응답:', response.data)
 
       if (response.data.errYn === 'N') {
-        // 성공: PEM 데이터를 폼에 입력
-        setValue('certData', response.data.DER2PEM || '')
-        setValue('privateKey', response.data.KEY2PEM || '')
+        // 성공: PEM 데이터를 폼에 입력 (헤더/푸터 제거)
+        const cleanCertData = (response.data.DER2PEM || '')
+          .replace(/-----BEGIN CERTIFICATE-----/g, '')
+          .replace(/-----END CERTIFICATE-----/g, '')
+          .replace(/[\r\n\t\s]/g, '')
+        
+        const cleanPrivateKey = (response.data.KEY2PEM || '')
+          .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+          .replace(/-----END PRIVATE KEY-----/g, '')
+          .replace(/[\r\n\t\s]/g, '')
+        
+        setValue('certData', cleanCertData)
+        setValue('privateKey', cleanPrivateKey)
         setCertDialogOpen(false)
         setCertPassword('')
         setSelectedCert(null)
