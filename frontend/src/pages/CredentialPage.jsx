@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Paper, Typography, Button, Table, TableHead, TableRow, TableCell, TableBody, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton } from '@mui/material'
-import { Delete as DeleteIcon } from '@mui/icons-material'
+import { Box, Paper, Typography, Button, Table, TableHead, TableRow, TableCell, TableBody, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { credentialService } from '../services/api'
 import toast from 'react-hot-toast'
@@ -65,7 +64,7 @@ export default function CredentialPage() {
               <TableCell>사업자등록번호</TableCell>
               <TableCell>상호</TableCell>
               <TableCell>상태</TableCell>
-              <TableCell>작업</TableCell>
+              <TableCell>인증서 삭제</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -75,14 +74,14 @@ export default function CredentialPage() {
                 <TableCell>{item.certName}</TableCell>
                 <TableCell>{item.isActive ? '활성' : '비활성'}</TableCell>
                 <TableCell>
-                  <IconButton 
+                  <Button 
                     size="small" 
                     color="error" 
+                    variant="outlined"
                     onClick={() => handleDeleteClick(item)}
-                    title="인증서 삭제"
                   >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+                    삭제
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

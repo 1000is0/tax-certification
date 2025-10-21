@@ -28,11 +28,19 @@ const schema = yup.object({
   certData: yup
     .string()
     .required('인증서 데이터는 필수입니다')
-    .min(100, '유효한 인증서 데이터를 입력해주세요'),
+    .min(100, '유효한 인증서 데이터를 입력해주세요')
+    .test('different-from-private-key', '인증서 데이터와 개인키는 같을 수 없습니다', function(value) {
+      const { privateKey } = this.parent
+      return !value || !privateKey || value.trim() !== privateKey.trim()
+    }),
   privateKey: yup
     .string()
     .required('개인키는 필수입니다')
-    .min(100, '유효한 개인키를 입력해주세요'),
+    .min(100, '유효한 개인키를 입력해주세요')
+    .test('different-from-cert-data', '개인키와 인증서 데이터는 같을 수 없습니다', function(value) {
+      const { certData } = this.parent
+      return !value || !certData || value.trim() !== certData.trim()
+    }),
   certPassword: yup
     .string()
     .required('인증서 비밀번호는 필수입니다')
@@ -224,10 +232,8 @@ function CredentialFormPage() {
                               error={!!errors.certData}
                               helperText={errors.certData?.message}
                               placeholder="MIIF...&#10;(BEGIN CERTIFICATE와 END CERTIFICATE 사이의 내용만)"
-                              onFocus={() => setFocused({ ...focused, certData: true })}
-                              onBlur={() => setFocused({ ...focused, certData: false })}
                             />
-                            {(focused.certData || field.value) && !errors.certData && (
+                            {!errors.certData && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
                                 BEGIN CERTIFICATE와 END CERTIFICATE를 제외한 사이의 데이터만 입력하세요
                               </FormHelperText>
@@ -252,10 +258,8 @@ function CredentialFormPage() {
                               error={!!errors.privateKey}
                               helperText={errors.privateKey?.message}
                               placeholder="MIIE...&#10;(BEGIN PRIVATE KEY와 END PRIVATE KEY 사이의 내용만)"
-                              onFocus={() => setFocused({ ...focused, privateKey: true })}
-                              onBlur={() => setFocused({ ...focused, privateKey: false })}
                             />
-                            {(focused.privateKey || field.value) && !errors.privateKey && (
+                            {!errors.privateKey && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
                                 BEGIN PRIVATE KEY와 END PRIVATE KEY를 제외한 사이의 데이터만 입력하세요
                               </FormHelperText>
@@ -283,7 +287,7 @@ function CredentialFormPage() {
                             />
                             {(focused.certPassword || field.value) && !errors.certPassword && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                최소 10자 이상의 인증서 비밀번호를 입력해주세요
+                                실제 인증서 비밀번호를 입력하세요
                               </FormHelperText>
                             )}
                           </Box>
@@ -307,9 +311,14 @@ function CredentialFormPage() {
                               onFocus={() => setFocused({ ...focused, userPassword: true })}
                               onBlur={() => setFocused({ ...focused, userPassword: false })}
                             />
-                            {(focused.userPassword || field.value) && !errors.userPassword && (
+                            {!errors.userPassword && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                최소 8자 이상의 비밀번호를 입력해주세요 (인증서 정보 암호화에 사용됩니다)
+                                인증서 정보 암호화에 사용됩니다
+                              </FormHelperText>
+                            )}
+                            {(focused.userPassword || field.value) && !errors.userPassword && (
+                              <FormHelperText sx={{ color: 'info.main', fontSize: '0.75rem', mt: 0.5 }}>
+                                최소 8자 이상의 비밀번호를 입력해주세요
                               </FormHelperText>
                             )}
                           </Box>
