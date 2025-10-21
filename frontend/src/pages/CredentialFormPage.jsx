@@ -56,10 +56,6 @@ const schema = yup.object({
     .string()
     .required('인증서 비밀번호는 필수입니다')
     .min(10, '인증서 비밀번호는 최소 10자 이상이어야 합니다'),
-  userPassword: yup
-    .string()
-    .required('사용자 비밀번호는 필수입니다')
-    .min(8, '사용자 비밀번호는 최소 8자 이상이어야 합니다'),
   certName: yup
     .string()
     .required('상호는 필수입니다')
@@ -93,7 +89,6 @@ function CredentialFormPage() {
       certData: '',
       privateKey: '',
       certPassword: '',
-      userPassword: '',
       certName: ''
     }
   })
@@ -225,7 +220,7 @@ function CredentialFormPage() {
       link.click()
       document.body.removeChild(link)
       
-      toast.success('설치 파일 다운로드를 시작합니다. 설치 완료 후 브라우저를 재시작하고 이 버튼을 다시 클릭해주세요.', {
+      toast.success('설치 파일 다운로드를 시작합니다. 설치 완료 후 브라우저를 재시작하고 인증서 정보 추출 버튼을 다시 클릭해주세요.', {
         duration: 6000
       })
     }
@@ -576,37 +571,6 @@ function CredentialFormPage() {
                       />
                     </Grid>
                     
-                    <Grid item xs={12} md={6}>
-                      <Controller
-                        name="userPassword"
-                        control={control}
-                        render={({ field }) => (
-                          <Box>
-                            <TextField
-                              {...field}
-                              label="사용자 비밀번호"
-                              type="password"
-                              fullWidth
-                              disabled={testCompleted}
-                              error={!!errors.userPassword}
-                              helperText={errors.userPassword?.message}
-                              onFocus={() => setFocused({ ...focused, userPassword: true })}
-                              onBlur={() => setFocused({ ...focused, userPassword: false })}
-                            />
-                            {!errors.userPassword && (
-                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                인증서 정보 암호화에 사용됩니다
-                              </FormHelperText>
-                            )}
-                            {(focused.userPassword || field.value) && !errors.userPassword && (
-                              <FormHelperText sx={{ color: 'info.main', fontSize: '0.75rem', mt: 0.5 }}>
-                                최소 8자 이상의 비밀번호를 입력해주세요
-                              </FormHelperText>
-                            )}
-                          </Box>
-                        )}
-                      />
-                    </Grid>
                   </Grid>
                 </CardContent>
               </Card>

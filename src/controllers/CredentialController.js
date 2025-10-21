@@ -21,7 +21,6 @@ class CredentialController {
         certData, 
         privateKey, 
         certPassword, 
-        userPassword, 
         certName, 
         certType, 
         expiresAt 
@@ -37,7 +36,7 @@ class CredentialController {
         });
       }
 
-      // 인증서 정보 생성
+      // 인증서 정보 생성 (마스터 키로 암호화)
       const credential = await TaxCredential.create({
         userId,
         clientId,
@@ -47,7 +46,7 @@ class CredentialController {
         certName,
         certType,
         expiresAt
-      }, userPassword); // 사용자 비밀번호로 암호화
+      }); // userPassword 제거 - 마스터 키 사용
 
       logSecurity('Credential created', {
         userId,
@@ -140,11 +139,11 @@ class CredentialController {
   // 클라이언트 ID로 인증서 복호화 (Make 웹훅용)
   static async decryptByClientId(req, res) {
     try {
-      const { clientId, userPassword } = req.body;
+      const { clientId } = req.body;
 
-      if (!clientId || !userPassword) {
+      if (!clientId) {
         return res.status(400).json({
-          error: '사업자등록번호와 사용자 비밀번호가 필요합니다.',
+          error: '사업자등록번호가 필요합니다.',
           code: 'MISSING_PARAMETERS'
         });
       }
@@ -157,7 +156,7 @@ class CredentialController {
         });
       }
 
-      const result = await TaxCredential.decryptByClientId(clientId, userPassword);
+      const result = await TaxCredential.decryptByClientId(clientId); // userPassword 제거
 
       logSecurity('Credential decrypted by client ID', {
         clientId,
@@ -209,7 +208,7 @@ class CredentialController {
 
       const { id } = req.params;
       const userId = req.user.userId;
-      const { certData, privateKey, certPassword, certName, certType, expiresAt, userPassword } = req.body;
+      const { certData, privateKey, certPassword, certName, certType, expiresAt } = req.body;
 
       const credential = await TaxCredential.findActiveById(id);
       if (!credential) {
@@ -227,14 +226,7 @@ class CredentialController {
         });
       }
 
-      if (!userPassword) {
-        return res.status(400).json({
-          error: '사용자 비밀번호가 필요합니다.',
-          code: 'USER_PASSWORD_REQUIRED'
-        });
-      }
-
-      // 인증서 정보 업데이트
+      // 인증서 정보 업데이트 (마스터 키 사용)
       const updatedCredential = await credential.update({
         certData,
         privateKey,
@@ -242,7 +234,7 @@ class CredentialController {
         certName,
         certType,
         expiresAt
-      }, userPassword);
+      }); // userPassword 제거
 
       logSecurity('Credential updated', {
         userId,

@@ -104,11 +104,11 @@ class EncryptionService {
     }
   }
 
-  // 인증서 정보 암호화 (특별한 처리)
-  encryptCredentials(credentials, userPassword) {
+  // 인증서 정보 암호화 (마스터 키 사용)
+  encryptCredentials(credentials) {
     try {
       const credentialsString = JSON.stringify(credentials);
-      const encrypted = this.encrypt(credentialsString, userPassword);
+      const encrypted = this.encrypt(credentialsString); // userPassword 제거 - 마스터 키 사용
       
       return {
         encrypted_cert_data: encrypted.encrypted,
@@ -116,7 +116,7 @@ class EncryptionService {
         encrypted_cert_password: encrypted.encrypted,
         encryption_iv: encrypted.iv,
         encryption_tag: encrypted.tag,
-        encryption_salt: encrypted.salt
+        encryption_salt: null // 마스터 키 사용하므로 salt 불필요
       };
     } catch (error) {
       logError(error, { operation: 'encryptCredentials' });
@@ -124,17 +124,17 @@ class EncryptionService {
     }
   }
 
-  // 인증서 정보 복호화
-  decryptCredentials(encryptedCredentials, userPassword) {
+  // 인증서 정보 복호화 (마스터 키 사용)
+  decryptCredentials(encryptedCredentials) {
     try {
       const encryptedData = {
         encrypted: encryptedCredentials.encrypted_cert_data,
         iv: encryptedCredentials.encryption_iv,
         tag: encryptedCredentials.encryption_tag,
-        salt: encryptedCredentials.encryption_salt
+        salt: null // 마스터 키 사용하므로 salt 불필요
       };
 
-      const decryptedString = this.decrypt(encryptedData, userPassword);
+      const decryptedString = this.decrypt(encryptedData); // userPassword 제거 - 마스터 키 사용
       return JSON.parse(decryptedString);
     } catch (error) {
       logError(error, { operation: 'decryptCredentials' });

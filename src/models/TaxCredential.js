@@ -22,7 +22,7 @@ class TaxCredential {
   }
 
   // 인증서 정보 생성
-  static async create(credentialData, userPassword) {
+  static async create(credentialData) {
     try {
       const { 
         userId, 
@@ -40,14 +40,14 @@ class TaxCredential {
         throw new Error('사업자등록번호는 10자리 숫자여야 합니다.');
       }
 
-      // 인증서 정보 암호화
+      // 인증서 정보 암호화 (마스터 키 사용)
       const credentials = {
         certData,
         privateKey,
         certPassword
       };
 
-      const encrypted = encryptionService.encryptCredentials(credentials, userPassword);
+      const encrypted = encryptionService.encryptCredentials(credentials); // userPassword 제거
       
       const result = await query('tax_credentials', 'insert', {
         data: {
@@ -58,7 +58,7 @@ class TaxCredential {
           encrypted_cert_password: encrypted.encrypted_cert_password,
           encryption_iv: encrypted.encryption_iv,
           encryption_tag: encrypted.encryption_tag,
-          encryption_salt: encrypted.encryption_salt,
+          encryption_salt: null, // 마스터 키 사용하므로 NULL
           cert_name: certName,
           cert_type: certType,
           expires_at: expiresAt
@@ -247,7 +247,7 @@ class TaxCredential {
   }
 
   // 인증서 정보 복호화
-  async decryptCredentials(userPassword) {
+  async decryptCredentials() {
     try {
       const encryptedData = {
         encrypted_cert_data: this.encryptedCertData,
@@ -255,10 +255,10 @@ class TaxCredential {
         encrypted_cert_password: this.encryptedCertPassword,
         encryption_iv: this.encryptionIv,
         encryption_tag: this.encryptionTag,
-        encryption_salt: this.encryptionSalt
+        encryption_salt: null // 마스터 키 사용하므로 salt 불필요
       };
 
-      const decrypted = encryptionService.decryptCredentials(encryptedData, userPassword);
+      const decrypted = encryptionService.decryptCredentials(encryptedData); // userPassword 제거
       
       logAudit('read', 'credentials', this.id, this.userId, {
         action: 'decrypt',
@@ -273,7 +273,7 @@ class TaxCredential {
   }
 
   // 클라이언트 ID로 인증서 복호화 (Make 웹훅용)
-  static async decryptByClientId(clientId, userPassword) {
+  static async decryptByClientId(clientId) {
     try {
       console.log('Starting decryptByClientId for clientId:', clientId);
       
@@ -284,7 +284,7 @@ class TaxCredential {
       }
 
       console.log('Credential found, attempting decryption...');
-      const decryptedData = await credential.decryptCredentials(userPassword);
+      const decryptedData = await credential.decryptCredentials(); // userPassword 제거
       console.log('Decryption successful');
       
       logAudit('read', 'credentials', credential.id, credential.userId, {
@@ -304,7 +304,7 @@ class TaxCredential {
   }
 
   // 인증서 정보 업데이트
-  async update(updateData, userPassword) {
+  async update(updateData) {
     try {
       const { 
         certData, 
@@ -317,8 +317,8 @@ class TaxCredential {
       
       let encryptedData = null;
       if (certData || privateKey || certPassword) {
-        // 기존 데이터 복호화
-        const existingData = await this.decryptCredentials(userPassword);
+        // 기존 데이터 복호화 (마스터 키 사용)
+        const existingData = await this.decryptCredentials();
         
         // 새로운 데이터로 업데이트
         const newCredentials = {
@@ -327,7 +327,7 @@ class TaxCredential {
           certPassword: certPassword || existingData.certPassword
         };
 
-        encryptedData = encryptionService.encryptCredentials(newCredentials, userPassword);
+        encryptedData = encryptionService.encryptCredentials(newCredentials); // userPassword 제거
       }
 
       const updates = {};
@@ -338,7 +338,7 @@ class TaxCredential {
         updates.encrypted_cert_password = encryptedData.encrypted_cert_password;
         updates.encryption_iv = encryptedData.encryption_iv;
         updates.encryption_tag = encryptedData.encryption_tag;
-        updates.encryption_salt = encryptedData.encryption_salt;
+        updates.encryption_salt = null; // 마스터 키 사용하므로 NULL
       }
 
       if (certName !== undefined) {
