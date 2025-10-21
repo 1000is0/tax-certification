@@ -259,14 +259,23 @@ function CredentialFormPage() {
                               disabled={testCompleted}
                               error={!!errors.certData}
                               helperText={errors.certData?.message}
-                              placeholder="MIIF...&#10;(-----BEGIN CERTIFICATE----- 와 -----END CERTIFICATE----- 사이의 내용만)"
-                              value={field.value}
+                              placeholder="MIIF... (-----BEGIN CERTIFICATE----- 와 -----END CERTIFICATE----- 사이의 내용만)"
+                              value={field.value || ''}
                               onChange={(e) => {
-                                const cleaned = e.target.value.replace(/[\r\n\s]/g, '');
+                                const cleaned = e.target.value.replace(/[\r\n\t\s]/g, '');
+                                field.onChange(cleaned);
+                              }}
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                const pastedText = e.clipboardData.getData('text');
+                                const cleaned = pastedText.replace(/[\r\n\t\s]/g, '');
                                 field.onChange(cleaned);
                               }}
                               onBlur={field.onBlur}
                               name={field.name}
+                              inputProps={{
+                                style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' }
+                              }}
                             />
                             {!errors.certData && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
@@ -292,14 +301,23 @@ function CredentialFormPage() {
                               disabled={testCompleted}
                               error={!!errors.privateKey}
                               helperText={errors.privateKey?.message}
-                              placeholder="MIIE...&#10;(-----BEGIN PRIVATE KEY----- 와 -----END PRIVATE KEY----- 사이의 내용만)"
-                              value={field.value}
+                              placeholder="MIIE... (-----BEGIN PRIVATE KEY----- 와 -----END PRIVATE KEY----- 사이의 내용만)"
+                              value={field.value || ''}
                               onChange={(e) => {
-                                const cleaned = e.target.value.replace(/[\r\n\s]/g, '');
+                                const cleaned = e.target.value.replace(/[\r\n\t\s]/g, '');
+                                field.onChange(cleaned);
+                              }}
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                const pastedText = e.clipboardData.getData('text');
+                                const cleaned = pastedText.replace(/[\r\n\t\s]/g, '');
                                 field.onChange(cleaned);
                               }}
                               onBlur={field.onBlur}
                               name={field.name}
+                              inputProps={{
+                                style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' }
+                              }}
                             />
                             {!errors.privateKey && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
