@@ -21,7 +21,8 @@ import {
   TableBody,
   TableCell,
   TableHead,
-  TableRow
+  TableRow,
+  Radio
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -77,6 +78,7 @@ function CredentialFormPage() {
   const [certDialogOpen, setCertDialogOpen] = useState(false)
   const [certList, setCertList] = useState([])
   const [selectedCert, setSelectedCert] = useState(null)
+  const [certPassword, setCertPassword] = useState('') // 인증서 비밀번호 입력
 
   const {
     control,
@@ -229,17 +231,77 @@ function CredentialFormPage() {
     }
   }
 
+  // 인증서 구분 함수 (OID 기반)
+  const getCertType = (oid) => {
+    const perArr = ['1.2.410.200005.1.1.1', '1.2.410.200004.5.1.1.5', '1.2.410.200004.5.2.1.2', 
+                    '1.2.410.200004.5.4.1.1', '1.2.410.200012.1.1.1', '1.2.410.200005.1.1.4',
+                    '1.2.410.200012.1.1.101', '1.2.410.200004.5.2.1.7.1', '1.2.410.200004.5.4.1.101',
+                    '1.2.410.200004.5.1.1.9.2', '1.2.410.200004.5.2.1.7.3', '1.2.410.200004.5.4.1.103',
+                    '1.2.410.200012.1.1.105', '1.2.410.200012.1.1.103', '1.2.410.200004.5.1.1.9',
+                    '1.2.410.200004.5.4.1.104', '1.2.410.200004.5.5.1.3.1', '1.2.410.200004.5.5.1.4.1',
+                    '1.2.410.200004.5.5.1.4.2']
+    const bizArr = ['1.2.410.200005.1.1.5', '1.2.410.200004.5.1.1.7', '1.2.410.200004.5.2.1.1',
+                    '1.2.410.200004.5.4.1.2', '1.2.410.200012.1.1.3', '1.2.410.200005.1.1.2',
+                    '1.2.410.200005.1.1.6.1', '1.2.410.200004.5.1.1.12.908', '1.2.410.200004.5.2.1.5001',
+                    '1.2.410.200004.5.2.1.6.257', '1.2.410.200005.1.1.6.8', '1.2.410.200005.1.1.6.3',
+                    '1.2.410.200005.1.1.6.5', '1.2.410.200005.1.1.6.4', '1.2.410.200005.1.1.7.1',
+                    '1.2.410.200004.5.5.1.2']
+    
+    if (perArr.includes(oid)) return '개인'
+    if (bizArr.includes(oid)) return '법인'
+    return '기타'
+  }
+
   const handleCertSelect = (cert) => {
     setSelectedCert(cert)
   }
 
-  const handleCertConfirm = () => {
-    if (selectedCert) {
-      // 인증서 데이터를 폼에 입력
-      setValue('certData', selectedCert.signCert || '')
-      setValue('privateKey', selectedCert.signPri || '')
-      setCertDialogOpen(false)
-      toast.success('인증서 정보가 입력되었습니다.')
+  const handleCertConfirm = async () => {
+    if (!selectedCert) {
+      toast.error('인증서를 선택해주세요')
+      return
+    }
+    if (!certPassword) {
+      toast.error('인증서 비밀번호를 입력해주세요')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      // NX2 API로 실제 PEM 데이터 추출
+      const isMac = window.navigator.platform.includes('Mac')
+      const certPath = selectedCert.path + (isMac ? '/' : '\\')
+      
+      const response = await axios.post('https://127.0.0.1:16566/?op=execute', {
+        orgCd: 'common',
+        svcCd: 'getCertInfo',
+        appCd: 'TaxAutomation',
+        signCert: certPath + 'signCert.der',
+        signPri: certPath + 'signPri.key',
+        signPw: certPassword
+      }, {
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        timeout: 5000
+      })
+
+      console.log('인증서 추출 응답:', response.data)
+
+      if (response.data.errYn === 'N') {
+        // 성공: PEM 데이터를 폼에 입력
+        setValue('certData', response.data.DER2PEM || '')
+        setValue('privateKey', response.data.KEY2PEM || '')
+        setCertDialogOpen(false)
+        setCertPassword('')
+        setSelectedCert(null)
+        toast.success('인증서 정보가 입력되었습니다.')
+      } else {
+        toast.error(response.data.errMsg || '인증서 추출에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('인증서 추출 오류:', error)
+      toast.error('인증서 비밀번호가 올바르지 않거나 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -557,16 +619,21 @@ function CredentialFormPage() {
       </Paper>
 
       {/* 인증서 선택 다이얼로그 */}
-      <Dialog open={certDialogOpen} onClose={() => setCertDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog open={certDialogOpen} onClose={() => { setCertDialogOpen(false); setSelectedCert(null); setCertPassword('') }} maxWidth="md" fullWidth>
         <DialogTitle>인증서 선택</DialogTitle>
         <DialogContent>
-          <Table>
+          <Typography variant="subtitle2" sx={{ mb: 2 }}>
+            인증서 목록
+          </Typography>
+          <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>선택</TableCell>
+                <TableCell width="60">선택</TableCell>
+                <TableCell width="80">구분</TableCell>
                 <TableCell>인증서명</TableCell>
-                <TableCell>발급자</TableCell>
                 <TableCell>만료일</TableCell>
+                <TableCell>발급자</TableCell>
+                <TableCell width="100">위치</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -576,34 +643,70 @@ function CredentialFormPage() {
                   hover
                   selected={selectedCert === cert}
                   onClick={() => handleCertSelect(cert)}
-                  sx={{ cursor: 'pointer' }}
+                  sx={{ 
+                    cursor: 'pointer',
+                    backgroundColor: selectedCert === cert ? 'rgba(233, 73, 60, 0.1)' : 'inherit',
+                    '&:hover': {
+                      backgroundColor: selectedCert === cert ? 'rgba(233, 73, 60, 0.2)' : 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
                 >
                   <TableCell>
-                    <input 
-                      type="radio" 
+                    <Radio 
                       checked={selectedCert === cert}
                       onChange={() => handleCertSelect(cert)}
+                      size="small"
                     />
                   </TableCell>
-                  <TableCell>{cert.subjectName || '-'}</TableCell>
-                  <TableCell>{cert.issuerName || '-'}</TableCell>
-                  <TableCell>{cert.validTo || '-'}</TableCell>
+                  <TableCell>{getCertType(cert.oid)}</TableCell>
+                  <TableCell>{cert.certName || '-'}</TableCell>
+                  <TableCell>{cert.toDt || '-'}</TableCell>
+                  <TableCell>{cert.pub || '-'}</TableCell>
+                  <TableCell>{cert.drive || '-'}</TableCell>
                 </TableRow>
               ))}
               {certList.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
+                  <TableCell colSpan={6} align="center">
                     인증서가 없습니다.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              인증서 비밀번호 입력
+            </Typography>
+            <TextField
+              fullWidth
+              type="password"
+              value={certPassword}
+              onChange={(e) => setCertPassword(e.target.value)}
+              placeholder="인증서 비밀번호를 입력하세요"
+              disabled={!selectedCert}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && selectedCert && certPassword) {
+                  handleCertConfirm()
+                }
+              }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              안전한 개인정보 관리를 위해 6개월마다 비밀번호를 변경하기 바랍니다.
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCertDialogOpen(false)}>취소</Button>
-          <Button onClick={handleCertConfirm} variant="contained" disabled={!selectedCert}>
-            확인
+          <Button onClick={() => { setCertDialogOpen(false); setSelectedCert(null); setCertPassword('') }}>
+            취소
+          </Button>
+          <Button 
+            onClick={handleCertConfirm} 
+            variant="contained" 
+            disabled={!selectedCert || !certPassword || isLoading}
+          >
+            {isLoading ? <CircularProgress size={20} /> : '확인'}
           </Button>
         </DialogActions>
       </Dialog>
