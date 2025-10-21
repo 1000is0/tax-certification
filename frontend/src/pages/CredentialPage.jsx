@@ -53,27 +53,32 @@ export default function CredentialPage() {
     }
 
     try {
+      const credentialId = credentialToDelete.id
+      
       // 비밀번호 검증
       await authService.verifyPassword(passwordInput)
       
       // 비밀번호가 맞으면 인증서 삭제
-      await credentialService.deleteCredential(credentialToDelete.id)
+      await credentialService.deleteCredential(credentialId)
       
-      // UI에서 삭제된 항목 제거 (API 재조회 없이)
-      setList(prevList => prevList.filter(item => item.id !== credentialToDelete.id))
-      
-      toast.success('인증서가 삭제되었습니다.')
-      
+      // 상태 초기화 (먼저 다이얼로그를 닫고 상태를 정리)
       setPasswordDialogOpen(false)
       setCredentialToDelete(null)
       setPasswordInput('')
       setPasswordError('')
+      
+      // UI에서 삭제된 항목 제거 (API 재조회 없이)
+      setList(prevList => prevList.filter(item => item.id !== credentialId))
+      
+      // 성공 메시지는 마지막에 표시
+      toast.success('인증서가 삭제되었습니다.')
     } catch (err) {
       if (err.response?.status === 401 || err.response?.data?.code === 'INVALID_PASSWORD') {
         setPasswordError('비밀번호가 올바르지 않습니다.')
       } else {
         toast.error(err.response?.data?.error || '인증서 삭제에 실패했습니다.')
         setPasswordDialogOpen(false)
+        setCredentialToDelete(null)
         setPasswordInput('')
         setPasswordError('')
       }
