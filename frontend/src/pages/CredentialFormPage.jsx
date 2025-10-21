@@ -261,6 +261,7 @@ function CredentialFormPage() {
                               error={!!errors.certData}
                               helperText={errors.certData?.message}
                               placeholder="MIIF...&#10;(BEGIN CERTIFICATE와 END CERTIFICATE 사이의 내용만)"
+                              onChange={(e) => field.onChange(e.target.value.replace(/[\r\n]/g, ''))}
                             />
                             {!errors.certData && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
@@ -288,6 +289,7 @@ function CredentialFormPage() {
                               error={!!errors.privateKey}
                               helperText={errors.privateKey?.message}
                               placeholder="MIIE...&#10;(BEGIN PRIVATE KEY와 END PRIVATE KEY 사이의 내용만)"
+                              onChange={(e) => field.onChange(e.target.value.replace(/[\r\n]/g, ''))}
                             />
                             {!errors.privateKey && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>

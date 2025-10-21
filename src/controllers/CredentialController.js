@@ -391,12 +391,16 @@ class CredentialController {
       // Hyphen API를 통한 실제 연결 테스트
       const axios = require('axios');
       
+      // 개행문자 제거 (PEM 데이터에서 \n, \r 제거)
+      const cleanCertData = certData.replace(/[\r\n]/g, '');
+      const cleanPrivateKey = privateKey.replace(/[\r\n]/g, '');
+      
       try {
         console.log('Calling Hyphen API with clientId:', clientId);
         const response = await axios.post('https://api.hyphen.im/in0076000245', {
           loginMethod: 'CERT',
-          signCert: certData,
-          signPri: privateKey,
+          signCert: cleanCertData,
+          signPri: cleanPrivateKey,
           signPw: certPassword,
           bizNo: clientId
         }, {
