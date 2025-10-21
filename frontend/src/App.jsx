@@ -19,11 +19,11 @@ function App() {
         {/* 공개 라우트 */}
         <Route 
           path="/login" 
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Layout><LoginPage /></Layout>} 
         />
         <Route 
           path="/register" 
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />} 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Layout><RegisterPage /></Layout>} 
         />
         
         {/* 보호된 라우트 */}

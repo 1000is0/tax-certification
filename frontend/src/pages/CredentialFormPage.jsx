@@ -9,10 +9,6 @@ import {
   Grid,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Card,
   CardContent,
   Divider
@@ -46,12 +42,8 @@ const schema = yup.object({
     .min(8, '사용자 비밀번호는 최소 8자 이상이어야 합니다'),
   certName: yup
     .string()
-    .required('인증서 이름은 필수입니다')
-    .min(2, '인증서 이름은 최소 2자 이상이어야 합니다'),
-  certType: yup
-    .string()
-    .required('인증서 타입은 필수입니다')
-    .oneOf(['personal', 'business'], '유효한 인증서 타입을 선택해주세요')
+    .required('상호는 필수입니다')
+    .min(2, '상호는 최소 2자 이상이어야 합니다')
 })
 
 function CredentialFormPage() {
@@ -75,8 +67,7 @@ function CredentialFormPage() {
       privateKey: '',
       certPassword: '',
       userPassword: '',
-      certName: '',
-      certType: 'business'
+      certName: ''
     }
   })
 
@@ -151,6 +142,23 @@ function CredentialFormPage() {
                   <Grid container spacing={2}>
                     <Grid item xs={12} md={6}>
                       <Controller
+                        name="certName"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="상호"
+                            placeholder="예: (주)홍길동세무회계사무소"
+                            fullWidth
+                            error={!!errors.certName}
+                            helperText={errors.certName?.message}
+                          />
+                        )}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} md={6}>
+                      <Controller
                         name="clientId"
                         control={control}
                         render={({ field }) => (
@@ -163,44 +171,6 @@ function CredentialFormPage() {
                             helperText={errors.clientId?.message}
                             inputProps={{ maxLength: 10 }}
                           />
-                        )}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <Controller
-                        name="certName"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="인증서 이름"
-                            placeholder="예: 우리회사 인증서"
-                            fullWidth
-                            error={!!errors.certName}
-                            helperText={errors.certName?.message}
-                          />
-                        )}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <Controller
-                        name="certType"
-                        control={control}
-                        render={({ field }) => (
-                          <FormControl fullWidth error={!!errors.certType}>
-                            <InputLabel>인증서 타입</InputLabel>
-                            <Select {...field} label="인증서 타입">
-                              <MenuItem value="business">사업자용</MenuItem>
-                              <MenuItem value="personal">개인용</MenuItem>
-                            </Select>
-                            {errors.certType && (
-                              <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                                {errors.certType.message}
-                              </Typography>
-                            )}
-                          </FormControl>
                         )}
                       />
                     </Grid>
