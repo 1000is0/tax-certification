@@ -418,13 +418,20 @@ class CredentialController {
           timeout: 10000 // 10초 타임아웃
         });
 
-        console.log('Hyphen API response received:', JSON.stringify(response.data).substring(0, 200));
+        console.log('Hyphen API full response:', JSON.stringify(response.data));
+        console.log('Response type:', typeof response.data);
+        console.log('Is array:', Array.isArray(response.data));
 
         // Hyphen API 응답 구조 확인
-        // 응답은 { common: {...}, data: {...} } 형태
-        const commonData = response.data?.common;
+        // 응답이 배열인 경우와 객체인 경우를 모두 처리
+        let commonData;
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          commonData = response.data[0]?.data?.common || response.data[0]?.common;
+        } else {
+          commonData = response.data?.common;
+        }
         
-        console.log('commonData:', JSON.stringify(commonData));
+        console.log('Extracted commonData:', JSON.stringify(commonData));
 
         // errYn이 "Y"이면 에러
         if (commonData?.errYn === 'Y') {
