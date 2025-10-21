@@ -58,13 +58,16 @@ export default function CredentialPage() {
       
       // 비밀번호가 맞으면 인증서 삭제
       await credentialService.deleteCredential(credentialToDelete.id)
+      
+      // UI에서 삭제된 항목 제거 (API 재조회 없이)
+      setList(prevList => prevList.filter(item => item.id !== credentialToDelete.id))
+      
       toast.success('인증서가 삭제되었습니다.')
       
       setPasswordDialogOpen(false)
       setCredentialToDelete(null)
       setPasswordInput('')
       setPasswordError('')
-      fetchCredentials()
     } catch (err) {
       if (err.response?.status === 401 || err.response?.data?.code === 'INVALID_PASSWORD') {
         setPasswordError('비밀번호가 올바르지 않습니다.')
