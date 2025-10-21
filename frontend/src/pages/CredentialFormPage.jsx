@@ -209,13 +209,8 @@ function CredentialFormPage() {
         return
       }
       
-      // 설치 파일 다운로드
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // 설치 파일 다운로드 (새 창으로 열기)
+      window.open(downloadUrl, '_blank')
       
       toast.info('설치 완료 후 브라우저를 재시작하고 다시 시도해주세요.')
     }
