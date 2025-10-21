@@ -172,18 +172,22 @@ function CredentialFormPage() {
     try {
       // NX2 모듈 설치 여부 확인
       console.log('NX2 연결 시도 중...')
-      const response = await axios.get('https://127.0.0.1:16566/?op=certlist', {
+      const response = await axios.post('https://127.0.0.1:16566/', {
+        op: 'certlist'
+      }, {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 3000,
-        httpsAgent: false // HTTPS 검증 무시 (자체 서명 인증서)
+        timeout: 3000
       })
       
       console.log('NX2 응답:', response.data)
       
-      if (response.data && response.data.list) {
-        setCertList(response.data.list)
+      // NX2 응답 확인
+      if (response.data.errYn === 'N' && response.data.certList) {
+        setCertList(response.data.certList)
         setCertDialogOpen(true)
         toast.success('인증서 목록을 불러왔습니다.')
+      } else if (response.data.errYn === 'Y') {
+        toast.error(`NX2 오류: ${response.data.errMsg || '알 수 없는 오류'}`)
       } else {
         toast.error('인증서 목록을 찾을 수 없습니다.')
       }
