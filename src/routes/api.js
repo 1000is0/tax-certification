@@ -30,20 +30,17 @@ const credentialValidation = [
   body('certData').notEmpty().withMessage('인증서 데이터를 입력해주세요.'),
   body('privateKey').notEmpty().withMessage('개인키를 입력해주세요.'),
   body('certPassword').notEmpty().withMessage('인증서 비밀번호를 입력해주세요.'),
-  body('userPassword').notEmpty().withMessage('사용자 비밀번호를 입력해주세요.'),
   body('certName').optional().trim().isLength({ min: 2 }).withMessage('인증서 이름은 최소 2자 이상이어야 합니다.'),
   body('certType').optional().isIn(['personal', 'business']).withMessage('유효하지 않은 인증서 타입입니다.')
 ];
 
 const updateCredentialValidation = [
-  body('userPassword').notEmpty().withMessage('사용자 비밀번호를 입력해주세요.'),
   body('certName').optional().trim().isLength({ min: 2 }).withMessage('인증서 이름은 최소 2자 이상이어야 합니다.'),
   body('certType').optional().isIn(['personal', 'business']).withMessage('유효하지 않은 인증서 타입입니다.')
 ];
 
 const clientIdValidation = [
-  body('clientId').matches(/^[0-9]{10}$/).withMessage('사업자등록번호는 10자리 숫자여야 합니다.'),
-  body('userPassword').notEmpty().withMessage('사용자 비밀번호를 입력해주세요.')
+  body('clientId').matches(/^[0-9]{10}$/).withMessage('사업자등록번호는 10자리 숫자여야 합니다.')
 ];
 
 // 인증 관련 라우트
