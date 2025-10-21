@@ -252,7 +252,6 @@ function CredentialFormPage() {
                         render={({ field }) => (
                           <Box>
                             <TextField
-                              {...field}
                               label="인증서 데이터 (PEM)"
                               multiline
                               rows={6}
@@ -260,12 +259,18 @@ function CredentialFormPage() {
                               disabled={testCompleted}
                               error={!!errors.certData}
                               helperText={errors.certData?.message}
-                              placeholder="MIIF...&#10;(BEGIN CERTIFICATE와 END CERTIFICATE 사이의 내용만)"
-                              onChange={(e) => field.onChange(e.target.value.replace(/[\r\n]/g, ''))}
+                              placeholder="MIIF...&#10;(-----BEGIN CERTIFICATE----- 와 -----END CERTIFICATE----- 사이의 내용만)"
+                              value={field.value}
+                              onChange={(e) => {
+                                const cleaned = e.target.value.replace(/[\r\n\s]/g, '');
+                                field.onChange(cleaned);
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
                             />
                             {!errors.certData && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                BEGIN CERTIFICATE와 END CERTIFICATE를 제외한 사이의 데이터만 입력하세요
+                                -----BEGIN CERTIFICATE----- 와 -----END CERTIFICATE----- 를 제외한 사이의 데이터만 입력하세요
                               </FormHelperText>
                             )}
                           </Box>
@@ -280,7 +285,6 @@ function CredentialFormPage() {
                         render={({ field }) => (
                           <Box>
                             <TextField
-                              {...field}
                               label="개인키 (PEM)"
                               multiline
                               rows={6}
@@ -288,12 +292,18 @@ function CredentialFormPage() {
                               disabled={testCompleted}
                               error={!!errors.privateKey}
                               helperText={errors.privateKey?.message}
-                              placeholder="MIIE...&#10;(BEGIN PRIVATE KEY와 END PRIVATE KEY 사이의 내용만)"
-                              onChange={(e) => field.onChange(e.target.value.replace(/[\r\n]/g, ''))}
+                              placeholder="MIIE...&#10;(-----BEGIN PRIVATE KEY----- 와 -----END PRIVATE KEY----- 사이의 내용만)"
+                              value={field.value}
+                              onChange={(e) => {
+                                const cleaned = e.target.value.replace(/[\r\n\s]/g, '');
+                                field.onChange(cleaned);
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
                             />
                             {!errors.privateKey && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                BEGIN PRIVATE KEY와 END PRIVATE KEY를 제외한 사이의 데이터만 입력하세요
+                                -----BEGIN PRIVATE KEY----- 와 -----END PRIVATE KEY----- 를 제외한 사이의 데이터만 입력하세요
                               </FormHelperText>
                             )}
                           </Box>
