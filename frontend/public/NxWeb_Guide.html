@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html class="full" lang="ko" style="min-width:958px;">
+<!-- Make sure the <html> tag is set to the .full CSS class. Change the background image in the full.css file. -->
+
+<head>
+    <meta charset="utf-8" />
+
+    <meta name="keywords" content="" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+
+    <title>Infotech ExWeb Demo</title>
+
+    <link rel="stylesheet" href="css/font-awesome.min.css" />
+    <!--link rel="stylesheet" href="css/bootstrap.min.css" /-->
+    <link rel="stylesheet" href="css/jquery.dataTables.min.css" />
+    <!--link rel="stylesheet" href="css/ex.gate.bootstrap.css" /-->
+    <!--link rel="stylesheet" href="css/ex.gate.offcanvas.css" /-->
+    <!--link rel="stylesheet" href="css/ex.gate.css?181" /-->
+    <link href="css/viewer_220121.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/layerPopup_220124.css" />
+
+
+
+</head>
+
+<body class="ex-gate" id="body">
+    <script type="text/javascript" src="com/json2.min.js"></script>
+    <script type="text/javascript" src="com/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="com/ift.com.js"></script>
+    <script type="text/javascript" src="js/nx2.js"></script>
+    <script type="text/javascript" src="js/block-ui.js"></script>
+    <script src="js/jquery.blockUI.js"></script>
+    <script type="text/javascript">
+		function hrefTest(){
+			//window.location.href="https://solution.ktaxnara.com";
+			window.location.href="https://114.203.110.97:19036/";
+		}
+		$.support.cors = true;
+        function loadDoc(sUrl) {
+            var pd = $("textarea#tx_input").val();
+            $("textarea#tx_output").val("---------- send ----------");
+            $.ajax({
+                type: "POST",
+                url: sUrl,
+                data: pd,
+                dataType: "json",
+                contentType: 'application/json; charset=UTF-8',
+                crossDomain: true,
+                crossOrigin: true,
+                success: function(data) {
+                    // console.log(data);
+					print_receive(data);
+                },
+                error: function(xhr, status, error) {
+                    $("textarea#tx_output").val("---------- result ----------\n");
+                    $("textarea#tx_output").val(status)
+					if (sUrl.indexOf("op=setup") != -1) {
+						fnNxDownload("../ExAdapter_Web_Setup_20221130.exe");
+                        if (browserName == "Mozilla Firefox") {
+                            alert("설치가 완료된 후에 브라우저를 닫고, 다시 시작하여 이용하시기 바랍니다.(Firefox browser)");
+                        }
+					}
+                }
+            });
+        }
+
+        $(function () {
+            $("input[id=signPw]").keydown(function(key){
+                if(key.keyCode == 13){ // 레이어 창에서 Enter 키 입력시
+                    selectedCert.signPw = $('#signPw').val();
+                    if (selectedCert.signCert === undefined ||selectedCert.signCert === null){
+                        alert("인증서를 선택해주세요");
+                        return false;
+                    } else if(selectedCert.signPw === undefined || selectedCert.signPw === null || selectedCert.signPw === ''){
+                        alert("인증서 비밀번호를 입력해주세요")
+                        return false;
+                    } else {                        
+                        getCertResult();
+                        $("#tbody").empty();
+                        $('#signPw').val('');
+                        $('.dim-layer').fadeOut("fast"); // 닫기 버튼을 클릭하면 레이어가 닫힌다.
+                        return false;
+                    }
+                }
+            });
+
+            $('button#certConfirm').click(function(){
+                selectedCert.signPw = $('#signPw').val();
+                if (selectedCert.signCert === undefined ||selectedCert.signCert === null){
+                    alert("인증서를 선택해주세요");
+                    return false;
+                } else if(selectedCert.signPw === undefined || selectedCert.signPw === null || selectedCert.signPw === ''){
+                    alert("인증서 비밀번호를 입력해주세요")
+                    return false;
+                } else {                         
+                    getCertResult();
+                    $("#tbody").empty();
+                    $('#signPw').val('');
+                    $('.dim-layer').fadeOut("fast"); // 닫기 버튼을 클릭하면 레이어가 닫힌다.
+                    var emptyObj = new Object();
+                    selectedCert = emptyObj;
+                    return false;
+                }
+            });
+        })
+    </script>
+<!--start-->
+
+<div class="container">
+	<div class="nav_wrap">
+        <div class="logo">
+            <div class="logo_img"><img src="./img/logo_infotech.png"></div>
+        </div>
+        <div class="nav">
+            <div class="nav_menu" style="height: 720px;background-color: #EDF2F7;">
+                <button class="nav_btn" id="btn_setup">설치확인</button>
+                <button class="nav_btn" id="btn_execute">수집</button>
+                <button class="nav_btn" id="btn_cert_list">인증서목록</button>
+                <button class="nav_btn" id="btn_cert_select" onclick="fnNxCertListCS(); return;">인증서목록뷰(windows)</button>
+                <button class="nav_btn" id="btn_cert_select_web" onclick="popup(); return;">인증서목록뷰(Web)</button>
+                <button class="nav_btn" id="btn_export_cert">인증서이동(windows)</button>
+                <button class="nav_btn" id="btn_export_cert_web">인증서이동(Web)</button>
+				<!-- <button class="nav_btn" onclick="hrefTest();"></button> -->
+            </div>
+                <button class="guide_btn" onclick="window.open('https://www.infotech.co.kr/guide/nx2.html');">NX2 개발가이드</button>
+        </div>
+    </div>
+	<div class="right_content">
+        <div class="title">
+            <ul class="dots">
+                <li class="dot_active"><p><span>Infotech&nbsp;</span>NonActiveX(ExWeb)&nbsp;Guide</p></li>
+                <li class="dot_non" id="title_txt">
+                    ExWeb은 Infotech 솔루션을 보다 쉽고 안정적으로 웹화면에 적용하기 위한 NonActiveX 모듈로써<br/>
+                    다양한 브라우저의 의존성을 제거하고, 빠른 서비스 적용과 더불어 OS 업그레이드 등의 환경변화에<br/>
+                    유연하게 대응가능합니다.
+                </li>
+            </ul>
+        </div>
+        <div class="content main">
+            <div class="item">
+                <div class="code1">
+                    <div class="code_name">
+                        <div><p>아래에 요청값을 넣어주세요</p></div>
+                        <div class="btn_wrap">
+                            <button type="button" onclick="execute();">실행하기</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h5>
+                            <textarea id="inputText" style="border: none;outline: none;resize: none;"></textarea>
+                        </h5>
+                    </div>
+                </div>
+                <div class="code2">
+                    <div class="code_name">
+                        <p>여기에 결과가 출력됩니다</p>
+                    </div>
+                        <h5>
+                            <textarea id="outputText" style="height: 490px;border: none;outline: none;resize: none;"></textarea>
+                        </h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="content cert" style="display: none;">
+            <div class="item">
+                <div class="page6" id="certSendF">
+                        <h3 class="M_title">공동인증서 내보내기</h3>
+                        <p class="S_title">※ 스마트폰의 인증번호 12자리 입력후 인증서 보내기를 클릭하세요.</p>
+                    <div class="certnum_wrap">
+                        <div class="certnum_box">
+                            <p class="control-label">인증번호</p>
+                            <div>
+                                <input type="text" class="form-control" name="uid00" value="" maxlength="4"/>
+                                <span class="input-group-addon">-</span>
+                                <input type="text" class="form-control" name="uid01" value="" maxlength="4"/>
+                                <span class="input-group-addon">-</span>
+                                <input type="text" class="form-control" name="uid02" value="" maxlength="4"/>
+                            </div>
+                            <button class="send_btn" onclick="javascrpit:fnCertSend('#certSendF'); return false;">인증서 보내기</button>
+                        </div>
+                    </div>
+                    <div class="stepbox_wrap">
+                        <div class="stepbox">
+                                <div class="step_title"><button class="circle2">1</button> [모바일] 인증서관리 테스트 앱에서
+                                인증번호를 확인하세요.</div>
+                                <div class="step_img"><img src="./img/step_1.png"></div>
+                        </div>
+                        <div class="stepbox">
+                                <div class="step_title"><button class="circle2">2</button> [웹] 인증번호 12자리를 입력하고
+                                    [인증서 보내기]를 클릭하세요.</div>
+                                <div class="step_img"><img src="./img/step_2.png"></div>
+                        </div>
+                        <div class="stepbox">
+                                <div class="step_title"><button class="circle2">3</button> [웹] 인증서를 선택하고 비밀번호를
+                                    입력하세요. </div>
+                                <div class="step_img"><img src="./img/step_3.png"></div>
+                        </div>
+                        <div class="stepbox">
+                                <div class="step_title"><button class="circle2">4</button> [모바일] 인증서가져오기 버튼을
+                                    누르면 인증서 이동이 완료됩니다.</div>
+                                <div class="step_img"><img src="./img/step_4.png"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="c_info">                
+                <p class="comp_text"><strong>인포텍코퍼레이션㈜</strong>
+                    <span>Tel</span>&nbsp;&nbsp;l&nbsp;02-598-6565
+                    <span>Fax</span>&nbsp;&nbsp;l&nbsp;02-558-8210 
+                    <span>E-mail</span>&nbsp;l&nbsp;tech_support@infotech.co.kr
+                </p>
+            </div>
+            <div class="copyright">
+                <p class="copy_text">Ⓒ Infotech Corporation.All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- 레이어 팝업-->
+    <div class="dim-layer">
+        <div class="dimBg"></div>
+        <div id="layer2" class="pop-layer">
+            <div class="pop-container">
+            <div class="pop_head">
+                <div><p id="title_cert_list">공동인증 전자서명</p></div>
+                <div class="btnX_wrap">
+                    <button class="btnX" onclick="certCancel();">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" height="12" width="12" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M24 20.188l-8.315-8.209 8.2-8.282-3.697-3.697-8.212 8.318-8.31-8.203-3.666 3.666 8.321 8.24-8.206 8.313 3.666 3.666 8.237-8.318 8.285 8.203z">
+                            </path>
+                        </svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <div class="pop_cont">
+                <div class="logo_grap"><img src="./img/logo_grap.png"></div>
+                    <div>
+                        <p class="pop_title">인증서 선택</p>
+                    </div>
+                    <div>
+                        <div class="table_wrap">
+                            <table class="pop_table">
+                                <thead>
+                                    <tr class="cert_title">
+                                        <th class="th1">구분</th>
+                                        <th class="th2">인증서명</th>
+                                        <th class="th3">만료일</th>
+                                        <th class="th4">발급자</th>
+                                        <th class="th5">위치</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pop_table_tbody">
+                                    <tr class="cert_cont">
+                                        <td class="td1"></td>
+                                        <td class="td2"></td>
+                                        <td class="td3"></td>
+                                        <td class="td4"></td>
+                                        <td class="td5"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                
+                    <div> 
+                        <div><p class="pop_title">인증서 암호입력</p></div>
+                        <div class="pw_wrap">
+                            <input type="password"id="signPw" />
+                            <p>안전한 개인정보 관리를 위해 6개월마다 비밀번호를 변경하기 바랍니다.</p>
+                        </div>
+                    </div> 
+                
+                    <div class="pop-conts">
+                        <div class="pop-conts_wrap">
+                            <button class="btn btn-default btn-layerClose" id="certCancel" onclick="certCancel();">취소</a>
+                            <button class="btn btn-success btn-layerConfirm" id="certConfirm">확인</a>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
