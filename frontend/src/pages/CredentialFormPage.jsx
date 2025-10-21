@@ -172,10 +172,8 @@ function CredentialFormPage() {
     try {
       // NX2 모듈 설치 여부 확인
       console.log('NX2 연결 시도 중...')
-      const response = await axios.post('https://127.0.0.1:16566/', {
-        op: 'certlist'
-      }, {
-        headers: { 'Content-Type': 'application/json' },
+      const response = await axios.post('https://127.0.0.1:16566/?op=certList', '', {
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         timeout: 3000
       })
       
