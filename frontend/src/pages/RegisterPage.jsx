@@ -200,7 +200,7 @@ export default function RegisterPage() {
                 />
               </Grid>
               <Grid item xs={12}>
-                <Button type="submit" variant="contained" disabled={isLoading}>다음</Button>
+                <Button type="submit" variant="contained" disabled={isLoading}>회원가입</Button>
                 <Typography variant="body2" sx={{ mt: 2 }}>
                   이미 계정이 있으신가요? <Link to="/login">로그인</Link>
                 </Typography>

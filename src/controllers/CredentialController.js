@@ -376,6 +376,7 @@ class CredentialController {
       }
 
       // 중복 검사: DB에 이미 해당 사업자등록번호가 있으면 안 됨 (신규 등록용)
+      // 이 검사를 먼저 수행하여 불필요한 API 호출을 방지
       const existingCredential = await TaxCredential.findByClientId(clientId);
       if (existingCredential) {
         return res.status(409).json({
@@ -417,10 +418,20 @@ class CredentialController {
       } catch (apiError) {
         logError(apiError, { operation: 'CredentialController.testConnection.HyphenAPI' });
         
+        // HDM016 에러 코드 처리
+        const errorData = apiError.response?.data;
+        if (errorData && errorData.ErrCd === 'HDM016') {
+          return res.status(400).json({
+            error: '잠시 후에 다시 시도하세요.',
+            code: 'HDM016',
+            details: errorData
+          });
+        }
+        
         return res.status(400).json({
           error: '연결 테스트에 실패했습니다. 입력한 정보를 다시 확인해주세요.',
           code: 'CONNECTION_TEST_FAILED',
-          details: apiError.response?.data || apiError.message
+          details: errorData || apiError.message
         });
       }
     } catch (error) {

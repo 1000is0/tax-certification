@@ -61,6 +61,7 @@ function CredentialFormPage() {
   const isEdit = Boolean(id)
   const [isLoading, setIsLoading] = useState(false)
   const [testResult, setTestResult] = useState(null)
+  const [testError, setTestError] = useState('') // 연결 테스트 에러 메시지
   const [focused, setFocused] = useState({})
 
   const {
@@ -104,11 +105,14 @@ function CredentialFormPage() {
   const handleTestConnection = async () => {
     const formData = watch()
     if (!formData.clientId || !formData.certData || !formData.privateKey || !formData.certPassword) {
-      toast.error('사업자등록번호, 인증서 데이터, 개인키, 인증서 비밀번호를 모두 입력해주세요.')
+      setTestError('사업자등록번호, 인증서 데이터, 개인키, 인증서 비밀번호를 모두 입력해주세요.')
       return
     }
 
     setIsLoading(true)
+    setTestError('') // 이전 에러 메시지 초기화
+    setTestResult(null) // 이전 결과 초기화
+    
     try {
       const result = await credentialService.testConnection({
         clientId: formData.clientId,
@@ -119,11 +123,11 @@ function CredentialFormPage() {
       setTestResult(result)
       if (result.isValidConnection) {
         toast.success('연결 테스트에 성공했습니다.')
-      } else {
-        toast.error('연결 테스트에 실패했습니다.')
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || '연결 테스트 중 오류가 발생했습니다.')
+      // 모든 에러 메시지를 버튼 하단에 표시 (toast 팝업 제거)
+      const errorMessage = error.response?.data?.error || '연결 테스트 중 오류가 발생했습니다.'
+      setTestError(errorMessage)
       setTestResult({ isValidConnection: false })
     } finally {
       setIsLoading(false)
@@ -345,21 +349,23 @@ function CredentialFormPage() {
                       variant="outlined"
                       onClick={handleTestConnection}
                       disabled={isLoading}
-                      sx={{ mb: 2 }}
+                      sx={{ mb: 1 }}
                     >
                       {isLoading ? <CircularProgress size={20} /> : '연결 테스트'}
                     </Button>
                     
-                    {testResult && (
-                      <Alert 
-                        severity={testResult.isValidConnection ? 'success' : 'error'}
-                        sx={{ mt: 2 }}
+                    {/* 에러 메시지를 버튼 하단에 표시 */}
+                    {testError && (
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: 'error.main', 
+                          mt: 1,
+                          fontWeight: 500
+                        }}
                       >
-                        {testResult.isValidConnection 
-                          ? '연결 테스트에 성공했습니다.' 
-                          : '연결 테스트에 실패했습니다.'
-                        }
-                      </Alert>
+                        {testError}
+                      </Typography>
                     )}
                   </CardContent>
                 </Card>
