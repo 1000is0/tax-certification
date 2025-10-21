@@ -279,6 +279,17 @@ class User {
     }
   }
 
+  // 비밀번호 검증
+  async comparePassword(password) {
+    try {
+      const bcrypt = require('bcryptjs');
+      return await bcrypt.compare(password, this.passwordHash);
+    } catch (error) {
+      logError(error, { operation: 'User.comparePassword' });
+      throw error;
+    }
+  }
+
   // 사용자 요약 정보 반환 (민감한 정보 제외)
   toJSON() {
     return {
