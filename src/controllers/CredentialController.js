@@ -344,7 +344,7 @@ class CredentialController {
       });
 
       res.json({
-        message: '인증서가 성공적으로 삭제되었습니다.'
+        success: true
       });
     } catch (error) {
       logError(error, { operation: 'CredentialController.deleteCredential' });
