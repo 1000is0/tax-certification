@@ -184,11 +184,35 @@ function CredentialFormPage() {
       // NX2 모듈이 설치되어 있지 않으면 설치 파일 다운로드
       toast.error('인증서 추출 프로그램 설치가 필요합니다. 다운로드를 시작합니다.')
       
+      // OS 감지
+      const userAgent = window.navigator.userAgent
+      const platform = window.navigator.platform
+      const macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K']
+      const windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE']
+      
+      let downloadUrl = ''
+      let fileName = ''
+      
+      if (macosPlatforms.indexOf(platform) !== -1) {
+        // macOS
+        downloadUrl = 'https://www.infotech.co.kr/download/ExAdapter_Web_Setup.dmg'
+        fileName = 'ExAdapter_Web_Setup.dmg'
+        toast.info('macOS용 설치 파일을 다운로드합니다.')
+      } else if (windowsPlatforms.indexOf(platform) !== -1) {
+        // Windows
+        downloadUrl = 'https://www.infotech.co.kr/download/ExAdapter_Web_Setup.exe'
+        fileName = 'ExAdapter_Web_Setup.exe'
+        toast.info('Windows용 설치 파일을 다운로드합니다.')
+      } else {
+        // 기타 OS
+        toast.error('지원하지 않는 운영체제입니다. Windows 또는 macOS에서 사용해주세요.')
+        return
+      }
+      
       // 설치 파일 다운로드
-      const downloadUrl = 'https://www.infotech.co.kr/download/ExAdapter_Web_Setup.exe'
       const link = document.createElement('a')
       link.href = downloadUrl
-      link.download = 'ExAdapter_Web_Setup.exe'
+      link.download = fileName
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
