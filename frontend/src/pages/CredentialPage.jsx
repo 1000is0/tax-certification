@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Paper, Typography, Button, Table, TableHead, TableRow, TableCell, TableBody, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material'
+import { Box, Paper, Typography, Button, Table, TableHead, TableRow, TableCell, TableBody, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField } from '@mui/material'
 import { Link } from 'react-router-dom'
-import { credentialService } from '../services/api'
+import { credentialService, authService } from '../services/api'
+import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 
 export default function CredentialPage() {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [credentialToDelete, setCredentialToDelete] = useState(null)
+  const [passwordInput, setPasswordInput] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const { user } = useAuthStore()
 
   const fetchCredentials = async () => {
     try {
@@ -30,23 +35,58 @@ export default function CredentialPage() {
     setDeleteDialogOpen(true)
   }
 
-  const handleDeleteConfirm = async () => {
-    if (!credentialToDelete) return
-
-    try {
-      await credentialService.deleteCredential(credentialToDelete.id)
-      toast.success('인증서가 삭제되었습니다.')
-      setDeleteDialogOpen(false)
-      setCredentialToDelete(null)
-      fetchCredentials()
-    } catch (err) {
-      toast.error(err.response?.data?.error || '인증서 삭제에 실패했습니다.')
-    }
+  const handleDeleteConfirm = () => {
+    // 첫 번째 확인 후 비밀번호 입력 다이얼로그로 이동
+    setDeleteDialogOpen(false)
+    setPasswordDialogOpen(true)
   }
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false)
     setCredentialToDelete(null)
+  }
+
+  const handlePasswordConfirm = async () => {
+    if (!passwordInput) {
+      setPasswordError('비밀번호를 입력해주세요.')
+      return
+    }
+
+    if (!user || !user.email) {
+      toast.error('사용자 정보를 확인할 수 없습니다.')
+      return
+    }
+
+    try {
+      // 비밀번호 확인을 위해 로그인 시도
+      await authService.login({ email: user.email, password: passwordInput })
+      
+      // 비밀번호가 맞으면 인증서 삭제
+      await credentialService.deleteCredential(credentialToDelete.id)
+      toast.success('인증서가 삭제되었습니다.')
+      
+      setPasswordDialogOpen(false)
+      setCredentialToDelete(null)
+      setPasswordInput('')
+      setPasswordError('')
+      fetchCredentials()
+    } catch (err) {
+      if (err.response?.status === 401 || err.response?.data?.error?.includes('비밀번호')) {
+        setPasswordError('비밀번호가 올바르지 않습니다.')
+      } else {
+        toast.error(err.response?.data?.error || '인증서 삭제에 실패했습니다.')
+        setPasswordDialogOpen(false)
+        setPasswordInput('')
+        setPasswordError('')
+      }
+    }
+  }
+
+  const handlePasswordCancel = () => {
+    setPasswordDialogOpen(false)
+    setCredentialToDelete(null)
+    setPasswordInput('')
+    setPasswordError('')
   }
 
   return (
@@ -114,6 +154,42 @@ export default function CredentialPage() {
           </Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained" autoFocus>
             예, 삭제합니다
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={passwordDialogOpen} onClose={handlePasswordCancel}>
+        <DialogTitle>비밀번호 확인</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            계속하려면 로그인 비밀번호를 입력하세요.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="로그인 비밀번호"
+            type="password"
+            fullWidth
+            value={passwordInput}
+            onChange={(e) => {
+              setPasswordInput(e.target.value)
+              setPasswordError('')
+            }}
+            error={!!passwordError}
+            helperText={passwordError}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handlePasswordConfirm()
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handlePasswordCancel} color="primary">
+            취소
+          </Button>
+          <Button onClick={handlePasswordConfirm} color="error" variant="contained">
+            삭제
           </Button>
         </DialogActions>
       </Dialog>

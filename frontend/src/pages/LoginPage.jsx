@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Box, Paper, TextField, Button, Typography, FormHelperText } from '@mui/material'
+import { Box, Paper, TextField, Button, Typography, FormHelperText, IconButton, InputAdornment } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
   const [focused, setFocused] = useState({})
+  const [showPassword, setShowPassword] = useState(false)
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -92,13 +94,25 @@ export default function LoginPage() {
             <TextField 
               fullWidth 
               label="비밀번호" 
-              type="password" 
+              type={showPassword ? "text" : "password"}
               value={password} 
               onChange={e=>setPassword(e.target.value)}
               onFocus={()=>setFocused({...focused, password: true})}
               onBlur={()=>setFocused({...focused, password: false})}
               error={!!errors.password}
               helperText={errors.password}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
             />
             {(focused.password || password) && !errors.password && (
               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>

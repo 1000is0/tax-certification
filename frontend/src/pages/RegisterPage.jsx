@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Box, Paper, TextField, Button, Typography, Grid, Divider, FormHelperText } from '@mui/material'
+import { Box, Paper, TextField, Button, Typography, Grid, Divider, FormHelperText, IconButton, InputAdornment } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
@@ -22,6 +23,10 @@ export default function RegisterPage() {
   
   // 포커스 상태 (툴팁 표시용)
   const [focused, setFocused] = useState({})
+  
+  // 비밀번호 표시/숨기기
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // 유효성 검사 함수들
   const validateEmail = (email) => {
@@ -145,13 +150,25 @@ export default function RegisterPage() {
                 <TextField 
                   fullWidth 
                   label="비밀번호" 
-                  type="password" 
+                  type={showPassword ? "text" : "password"}
                   value={password} 
                   onChange={e=>setPassword(e.target.value)}
                   onFocus={()=>setFocused({...focused, password: true})}
                   onBlur={()=>setFocused({...focused, password: false})}
                   error={!!errors.password}
                   helperText={errors.password}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
                 />
                 {(focused.password || password) && !errors.password && (
                   <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
@@ -163,11 +180,23 @@ export default function RegisterPage() {
                 <TextField 
                   fullWidth 
                   label="비밀번호 확인" 
-                  type="password" 
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword} 
                   onChange={e=>setConfirmPassword(e.target.value)}
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>

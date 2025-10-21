@@ -103,8 +103,8 @@ function CredentialFormPage() {
 
   const handleTestConnection = async () => {
     const formData = watch()
-    if (!formData.clientId || !formData.userPassword) {
-      toast.error('사업자등록번호와 사용자 비밀번호를 입력해주세요.')
+    if (!formData.clientId || !formData.certData || !formData.privateKey || !formData.certPassword) {
+      toast.error('사업자등록번호, 인증서 데이터, 개인키, 인증서 비밀번호를 모두 입력해주세요.')
       return
     }
 
@@ -112,7 +112,9 @@ function CredentialFormPage() {
     try {
       const result = await credentialService.testConnection({
         clientId: formData.clientId,
-        userPassword: formData.userPassword
+        certData: formData.certData,
+        privateKey: formData.privateKey,
+        certPassword: formData.certPassword
       })
       setTestResult(result)
       if (result.isValidConnection) {

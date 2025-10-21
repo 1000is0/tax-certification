@@ -358,11 +358,11 @@ class CredentialController {
   // 인증서 연결 테스트
   static async testConnection(req, res) {
     try {
-      const { clientId, userPassword } = req.body;
+      const { clientId, certData, privateKey, certPassword } = req.body;
 
-      if (!clientId || !userPassword) {
+      if (!clientId || !certData || !privateKey || !certPassword) {
         return res.status(400).json({
-          error: '사업자등록번호와 사용자 비밀번호가 필요합니다.',
+          error: '모든 필드를 입력해주세요.',
           code: 'MISSING_PARAMETERS'
         });
       }
@@ -375,48 +375,56 @@ class CredentialController {
         });
       }
 
-      const credential = await TaxCredential.findByClientId(clientId);
-      if (!credential) {
-        return res.status(404).json({
-          error: '해당 사업자등록번호의 인증서를 찾을 수 없습니다.',
-          code: 'CREDENTIAL_NOT_FOUND'
+      // 중복 검사: DB에 이미 해당 사업자등록번호가 있으면 안 됨 (신규 등록용)
+      const existingCredential = await TaxCredential.findByClientId(clientId);
+      if (existingCredential) {
+        return res.status(409).json({
+          error: '입력하신 사업자등록번호의 인증서가 이미 등록되어 있습니다.',
+          code: 'CREDENTIAL_ALREADY_EXISTS'
         });
       }
 
-      // 인증서 정보 복호화
-      const decryptedData = await credential.decryptCredentials(userPassword);
+      // Hyphen API를 통한 실제 연결 테스트
+      const axios = require('axios');
+      
+      try {
+        const response = await axios.post('https://api.hyphen.im/in0076000245', {
+          loginMethod: 'CERT',
+          signCert: certData,
+          signPri: privateKey,
+          signPw: certPassword,
+          bizNo: clientId
+        }, {
+          headers: {
+            'hyphen-gustation': 'Y',
+            'user-id': 'demaglobal',
+            'Hkey': 'e77b55a09b7a8f2d',
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000 // 10초 타임아웃
+        });
 
-      // 연결 테스트 (실제 구현에서는 홈택스 API 호출)
-      // 여기서는 간단한 검증만 수행
-      const isValidConnection = decryptedData.certData && decryptedData.privateKey && decryptedData.certPassword;
+        logSecurity('Credential connection tested successfully', {
+          clientId,
+          userId: req.user?.id,
+          ip: req.ip
+        });
 
-      logSecurity('Credential connection tested', {
-        clientId,
-        credentialId: credential.id,
-        userId: credential.userId,
-        isValidConnection,
-        ip: req.ip
-      });
-
-      res.json({
-        message: isValidConnection ? '연결 테스트에 성공했습니다.' : '연결 테스트에 실패했습니다.',
-        isValidConnection,
-        credential: {
-          id: credential.id,
-          clientId: credential.clientId,
-          certName: credential.certName,
-          certType: credential.certType
-        }
-      });
+        res.json({
+          message: '연결 테스트에 성공했습니다.',
+          isValidConnection: true
+        });
+      } catch (apiError) {
+        logError(apiError, { operation: 'CredentialController.testConnection.HyphenAPI' });
+        
+        return res.status(400).json({
+          error: '연결 테스트에 실패했습니다. 입력한 정보를 다시 확인해주세요.',
+          code: 'CONNECTION_TEST_FAILED',
+          details: apiError.response?.data || apiError.message
+        });
+      }
     } catch (error) {
       logError(error, { operation: 'CredentialController.testConnection' });
-      
-      if (error.message.includes('복호화')) {
-        return res.status(400).json({
-          error: '인증서 정보 복호화에 실패했습니다. 비밀번호를 확인해주세요.',
-          code: 'DECRYPTION_ERROR'
-        });
-      }
 
       res.status(500).json({
         error: '연결 테스트 중 오류가 발생했습니다.',
