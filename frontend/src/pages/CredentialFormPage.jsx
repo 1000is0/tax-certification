@@ -141,18 +141,9 @@ function CredentialFormPage() {
       let errorMessage = '연결 테스트 중 오류가 발생했습니다.'
       
       if (errorData) {
-        // API에서 받은 에러 메시지
+        // API에서 받은 에러 메시지 (백엔드에서 이미 errMsg를 error 필드에 담아 보냄)
         if (errorData.error) {
           errorMessage = errorData.error
-        }
-        
-        // Hyphen API에서 받은 상세 에러 정보 (details에 errMsg가 있을 수 있음)
-        if (errorData.details) {
-          if (errorData.details.errMsg) {
-            errorMessage += ` (${errorData.details.errMsg})`
-          } else if (typeof errorData.details === 'string') {
-            errorMessage += ` (${errorData.details})`
-          }
         }
       }
       

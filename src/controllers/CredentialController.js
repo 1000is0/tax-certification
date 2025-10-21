@@ -405,6 +405,47 @@ class CredentialController {
           timeout: 10000 // 10초 타임아웃
         });
 
+        // Hyphen API 응답 구조 확인
+        // 응답은 배열이며, 첫 번째 요소의 data.common.errYn을 확인
+        const responseData = Array.isArray(response.data) ? response.data[0] : response.data;
+        const commonData = responseData?.data?.common;
+
+        // errYn이 "Y"이면 에러
+        if (commonData?.errYn === 'Y') {
+          const errorMessage = commonData.errMsg || '연결 테스트에 실패했습니다.';
+          const errorCode = commonData.errCd;
+
+          logSecurity('Credential connection test failed', {
+            clientId,
+            userId: req.user?.id,
+            errorCode,
+            errorMessage,
+            ip: req.ip
+          });
+
+          // HDM016 에러 코드 특별 처리
+          if (errorCode === 'HDM016') {
+            return res.status(400).json({
+              error: '잠시 후에 다시 시도하세요.',
+              code: 'HDM016',
+              details: {
+                errCd: errorCode,
+                errMsg: errorMessage
+              }
+            });
+          }
+
+          return res.status(400).json({
+            error: errorMessage,
+            code: errorCode || 'CONNECTION_TEST_FAILED',
+            details: {
+              errCd: errorCode,
+              errMsg: errorMessage
+            }
+          });
+        }
+
+        // errYn이 "N"이면 성공
         logSecurity('Credential connection tested successfully', {
           clientId,
           userId: req.user?.id,
@@ -418,20 +459,11 @@ class CredentialController {
       } catch (apiError) {
         logError(apiError, { operation: 'CredentialController.testConnection.HyphenAPI' });
         
-        // HDM016 에러 코드 처리
-        const errorData = apiError.response?.data;
-        if (errorData && errorData.ErrCd === 'HDM016') {
-          return res.status(400).json({
-            error: '잠시 후에 다시 시도하세요.',
-            code: 'HDM016',
-            details: errorData
-          });
-        }
-        
-        return res.status(400).json({
-          error: '연결 테스트에 실패했습니다. 입력한 정보를 다시 확인해주세요.',
-          code: 'CONNECTION_TEST_FAILED',
-          details: errorData || apiError.message
+        // 네트워크 에러나 기타 예외 처리
+        return res.status(500).json({
+          error: '연결 테스트 중 오류가 발생했습니다.',
+          code: 'CONNECTION_TEST_ERROR',
+          details: apiError.message
         });
       }
     } catch (error) {
