@@ -118,7 +118,12 @@ class TaxCredential {
 
       console.log('Query result:', result);
 
+      // PGRST116 에러는 "데이터 없음"을 의미하므로 null 반환
       if (result.error) {
+        if (result.error.code === 'PGRST116') {
+          console.log('No credentials found for clientId:', clientId);
+          return null;
+        }
         console.error('Query error:', result.error);
         logError(result.error, { operation: 'TaxCredential.findByClientId' });
         throw result.error;
