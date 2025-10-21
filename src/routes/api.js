@@ -51,6 +51,7 @@ router.post('/auth/register', registerValidation, AuthController.register);
 router.post('/auth/login', loginValidation, AuthController.login);
 router.post('/auth/refresh', AuthController.refreshToken);
 router.post('/auth/logout', authenticateToken, AuthController.logout);
+router.post('/auth/verify-password', authenticateToken, AuthController.verifyPassword);
 router.get('/auth/me', authenticateToken, AuthController.getCurrentUser);
 router.put('/auth/change-password', authenticateToken, changePasswordValidation, AuthController.changePassword);
 router.delete('/auth/account', authenticateToken, AuthController.deleteAccount);

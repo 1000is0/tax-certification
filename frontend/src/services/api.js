@@ -204,6 +204,16 @@ export const authService = {
     } catch (error) {
       throw error
     }
+  },
+
+  // 비밀번호 검증
+  async verifyPassword(password) {
+    try {
+      const response = await api.post('/auth/verify-password', { password })
+      return response.data
+    } catch (error) {
+      throw error
+    }
   }
 }
 

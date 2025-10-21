@@ -62,6 +62,7 @@ function CredentialFormPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [testResult, setTestResult] = useState(null)
   const [testError, setTestError] = useState('') // 연결 테스트 에러 메시지
+  const [testCompleted, setTestCompleted] = useState(false) // 연결 테스트 성공 여부
   const [focused, setFocused] = useState({})
 
   const {
@@ -85,6 +86,12 @@ function CredentialFormPage() {
   const watchedClientId = watch('clientId')
 
   const onSubmit = async (data) => {
+    // 연결 테스트가 완료되지 않았으면 저장 불가
+    if (!isEdit && !testCompleted) {
+      toast.error('연결 테스트를 먼저 완료해주세요.')
+      return
+    }
+
     setIsLoading(true)
     try {
       if (isEdit) {
@@ -122,11 +129,33 @@ function CredentialFormPage() {
       })
       setTestResult(result)
       if (result.isValidConnection) {
+        setTestCompleted(true) // 연결 테스트 성공 표시
         toast.success('연결 테스트에 성공했습니다.')
       }
     } catch (error) {
       // 모든 에러 메시지를 버튼 하단에 표시 (toast 팝업 제거)
-      const errorMessage = error.response?.data?.error || '연결 테스트 중 오류가 발생했습니다.'
+      setTestCompleted(false)
+      
+      // 상세한 에러 메시지 생성
+      const errorData = error.response?.data
+      let errorMessage = '연결 테스트 중 오류가 발생했습니다.'
+      
+      if (errorData) {
+        // API에서 받은 에러 메시지
+        if (errorData.error) {
+          errorMessage = errorData.error
+        }
+        
+        // Hyphen API에서 받은 상세 에러 정보 (details에 errMsg가 있을 수 있음)
+        if (errorData.details) {
+          if (errorData.details.errMsg) {
+            errorMessage += ` (${errorData.details.errMsg})`
+          } else if (typeof errorData.details === 'string') {
+            errorMessage += ` (${errorData.details})`
+          }
+        }
+      }
+      
       setTestError(errorMessage)
       setTestResult({ isValidConnection: false })
     } finally {
@@ -193,6 +222,7 @@ function CredentialFormPage() {
                               label="사업자등록번호"
                               placeholder="1234567890"
                               fullWidth
+                              disabled={testCompleted}
                               error={!!errors.clientId}
                               helperText={errors.clientId?.message}
                               inputProps={{ maxLength: 10 }}
@@ -235,6 +265,7 @@ function CredentialFormPage() {
                               multiline
                               rows={6}
                               fullWidth
+                              disabled={testCompleted}
                               error={!!errors.certData}
                               helperText={errors.certData?.message}
                               placeholder="MIIF...&#10;(BEGIN CERTIFICATE와 END CERTIFICATE 사이의 내용만)"
@@ -261,6 +292,7 @@ function CredentialFormPage() {
                               multiline
                               rows={6}
                               fullWidth
+                              disabled={testCompleted}
                               error={!!errors.privateKey}
                               helperText={errors.privateKey?.message}
                               placeholder="MIIE...&#10;(BEGIN PRIVATE KEY와 END PRIVATE KEY 사이의 내용만)"
@@ -286,6 +318,7 @@ function CredentialFormPage() {
                               label="인증서 비밀번호"
                               type="password"
                               fullWidth
+                              disabled={testCompleted}
                               error={!!errors.certPassword}
                               helperText={errors.certPassword?.message}
                               onFocus={() => setFocused({ ...focused, certPassword: true })}
@@ -348,10 +381,10 @@ function CredentialFormPage() {
                     <Button
                       variant="outlined"
                       onClick={handleTestConnection}
-                      disabled={isLoading}
+                      disabled={isLoading || testCompleted}
                       sx={{ mb: 1 }}
                     >
-                      {isLoading ? <CircularProgress size={20} /> : '연결 테스트'}
+                      {isLoading ? <CircularProgress size={20} /> : testCompleted ? '연결 테스트 완료' : '연결 테스트'}
                     </Button>
                     
                     {/* 에러 메시지를 버튼 하단에 표시 */}

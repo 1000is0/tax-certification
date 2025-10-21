@@ -52,14 +52,9 @@ export default function CredentialPage() {
       return
     }
 
-    if (!user || !user.email) {
-      toast.error('사용자 정보를 확인할 수 없습니다.')
-      return
-    }
-
     try {
-      // 비밀번호 확인을 위해 로그인 시도
-      await authService.login({ email: user.email, password: passwordInput })
+      // 비밀번호 검증
+      await authService.verifyPassword(passwordInput)
       
       // 비밀번호가 맞으면 인증서 삭제
       await credentialService.deleteCredential(credentialToDelete.id)
@@ -71,7 +66,7 @@ export default function CredentialPage() {
       setPasswordError('')
       fetchCredentials()
     } catch (err) {
-      if (err.response?.status === 401 || err.response?.data?.error?.includes('비밀번호')) {
+      if (err.response?.status === 401 || err.response?.data?.code === 'INVALID_PASSWORD') {
         setPasswordError('비밀번호가 올바르지 않습니다.')
       } else {
         toast.error(err.response?.data?.error || '인증서 삭제에 실패했습니다.')

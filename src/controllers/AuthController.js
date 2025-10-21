@@ -332,6 +332,59 @@ class AuthController {
       });
     }
   }
+
+  // 비밀번호 검증 (삭제 확인용)
+  static async verifyPassword(req, res) {
+    try {
+      const { password } = req.body;
+      const userId = req.user.id;
+
+      if (!password) {
+        return res.status(400).json({
+          error: '비밀번호를 입력해주세요.',
+          code: 'MISSING_PASSWORD'
+        });
+      }
+
+      // 사용자 조회
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          error: '사용자를 찾을 수 없습니다.',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // 비밀번호 확인
+      const isPasswordValid = await user.comparePassword(password);
+      if (!isPasswordValid) {
+        logSecurity('Password verification failed', {
+          userId,
+          ip: req.ip
+        });
+        return res.status(401).json({
+          error: '비밀번호가 올바르지 않습니다.',
+          code: 'INVALID_PASSWORD'
+        });
+      }
+
+      logSecurity('Password verified successfully', {
+        userId,
+        ip: req.ip
+      });
+
+      res.json({
+        message: '비밀번호가 확인되었습니다.',
+        verified: true
+      });
+    } catch (error) {
+      logError(error, { operation: 'AuthController.verifyPassword' });
+      res.status(500).json({
+        error: '비밀번호 확인 중 오류가 발생했습니다.',
+        code: 'PASSWORD_VERIFICATION_ERROR'
+      });
+    }
+  }
 }
 
 module.exports = AuthController;
