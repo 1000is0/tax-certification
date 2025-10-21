@@ -12,13 +12,23 @@ import {
   Card,
   CardContent,
   Divider,
-  FormHelperText
+  FormHelperText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import toast from 'react-hot-toast'
 import { credentialService } from '../services/api'
+import axios from 'axios'
 
 const schema = yup.object({
   clientId: yup
@@ -64,6 +74,9 @@ function CredentialFormPage() {
   const [testError, setTestError] = useState('') // 연결 테스트 에러 메시지
   const [testCompleted, setTestCompleted] = useState(false) // 연결 테스트 성공 여부
   const [focused, setFocused] = useState({})
+  const [certDialogOpen, setCertDialogOpen] = useState(false)
+  const [certList, setCertList] = useState([])
+  const [selectedCert, setSelectedCert] = useState(null)
 
   const {
     control,
@@ -151,6 +164,50 @@ function CredentialFormPage() {
       setTestResult({ isValidConnection: false })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // NX2 인증서 추출 함수
+  const handleExtractCert = async () => {
+    try {
+      // NX2 모듈 설치 여부 확인
+      const response = await axios.post('https://127.0.0.1:16566/?op=certlist', {}, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 3000
+      })
+      
+      if (response.data && response.data.list) {
+        setCertList(response.data.list)
+        setCertDialogOpen(true)
+      }
+    } catch (error) {
+      // NX2 모듈이 설치되어 있지 않으면 설치 파일 다운로드
+      toast.error('인증서 추출 프로그램 설치가 필요합니다. 다운로드를 시작합니다.')
+      
+      // 설치 파일 다운로드
+      const downloadUrl = 'https://www.infotech.co.kr/download/ExAdapter_Web_Setup.exe'
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = 'ExAdapter_Web_Setup.exe'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      toast.info('설치 완료 후 브라우저를 재시작하고 다시 시도해주세요.')
+    }
+  }
+
+  const handleCertSelect = (cert) => {
+    setSelectedCert(cert)
+  }
+
+  const handleCertConfirm = () => {
+    if (selectedCert) {
+      // 인증서 데이터를 폼에 입력
+      setValue('certData', selectedCert.signCert || '')
+      setValue('privateKey', selectedCert.signPri || '')
+      setCertDialogOpen(false)
+      toast.success('인증서 정보가 입력되었습니다.')
     }
   }
 
@@ -247,9 +304,7 @@ function CredentialFormPage() {
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={() => {
-                        window.open('/NxWeb_Guide.html', '_blank');
-                      }}
+                      onClick={handleExtractCert}
                     >
                       인증서 정보 추출
                     </Button>
@@ -468,6 +523,58 @@ function CredentialFormPage() {
           </Grid>
         </form>
       </Paper>
+
+      {/* 인증서 선택 다이얼로그 */}
+      <Dialog open={certDialogOpen} onClose={() => setCertDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>인증서 선택</DialogTitle>
+        <DialogContent>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>선택</TableCell>
+                <TableCell>인증서명</TableCell>
+                <TableCell>발급자</TableCell>
+                <TableCell>만료일</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {certList.map((cert, index) => (
+                <TableRow 
+                  key={index}
+                  hover
+                  selected={selectedCert === cert}
+                  onClick={() => handleCertSelect(cert)}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  <TableCell>
+                    <input 
+                      type="radio" 
+                      checked={selectedCert === cert}
+                      onChange={() => handleCertSelect(cert)}
+                    />
+                  </TableCell>
+                  <TableCell>{cert.subjectName || '-'}</TableCell>
+                  <TableCell>{cert.issuerName || '-'}</TableCell>
+                  <TableCell>{cert.validTo || '-'}</TableCell>
+                </TableRow>
+              ))}
+              {certList.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    인증서가 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCertDialogOpen(false)}>취소</Button>
+          <Button onClick={handleCertConfirm} variant="contained" disabled={!selectedCert}>
+            확인
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
