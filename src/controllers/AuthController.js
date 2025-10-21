@@ -337,7 +337,7 @@ class AuthController {
   static async verifyPassword(req, res) {
     try {
       const { password } = req.body;
-      const userId = req.user.id;
+      const userId = req.user.userId; // req.user.id가 아닌 req.user.userId
 
       if (!password) {
         return res.status(400).json({

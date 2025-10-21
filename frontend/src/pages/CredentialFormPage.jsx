@@ -187,6 +187,7 @@ function CredentialFormPage() {
                               label="상호"
                               placeholder="소나무세무그룹"
                               fullWidth
+                              disabled={testCompleted}
                               error={!!errors.certName}
                               helperText={errors.certName?.message}
                               onFocus={() => setFocused({ ...focused, certName: true })}
@@ -336,6 +337,7 @@ function CredentialFormPage() {
                               label="사용자 비밀번호"
                               type="password"
                               fullWidth
+                              disabled={testCompleted}
                               error={!!errors.userPassword}
                               helperText={errors.userPassword?.message}
                               onFocus={() => setFocused({ ...focused, userPassword: true })}
