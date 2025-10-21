@@ -19,6 +19,9 @@ export default function RegisterPage() {
   
   // 에러 상태
   const [errors, setErrors] = useState({})
+  
+  // 포커스 상태 (툴팁 표시용)
+  const [focused, setFocused] = useState({})
 
   // 유효성 검사 함수들
   const validateEmail = (email) => {
@@ -74,7 +77,14 @@ export default function RegisterPage() {
       await registerUser({ email, password, name: email.split('@')[0] })
       setStep(2)
     } catch (err) {
-      toast.error(err.response?.data?.error || '회원가입 실패')
+      const errorMessage = err.response?.data?.error || '회원가입 실패'
+      
+      // 중복 이메일 에러를 입력란 하단에 표시
+      if (errorMessage.includes('이메일') || errorMessage.includes('email')) {
+        setErrors({ ...errors, email: '이미 사용중인 이메일입니다.' })
+      } else {
+        toast.error(errorMessage)
+      }
     }
   }
 
@@ -109,7 +119,7 @@ export default function RegisterPage() {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
       <Paper sx={{ p: 4, width: 740 }}>
-        <Typography variant="h5" gutterBottom>회원가입</Typography>
+        <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>회원가입</Typography>
 
         {step === 1 && (
           <form onSubmit={onSubmitStep1}>
@@ -120,11 +130,13 @@ export default function RegisterPage() {
                   label="이메일" 
                   value={email} 
                   onChange={e=>setEmail(e.target.value)}
+                  onFocus={()=>setFocused({...focused, email: true})}
+                  onBlur={()=>setFocused({...focused, email: false})}
                   error={!!errors.email}
                   helperText={errors.email}
                 />
-                {email && !errors.email && (
-                  <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                {(focused.email || email) && !errors.email && (
+                  <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
                     올바른 이메일 형식으로 입력해주세요. (예: user@example.com)
                   </FormHelperText>
                 )}
@@ -136,11 +148,13 @@ export default function RegisterPage() {
                   type="password" 
                   value={password} 
                   onChange={e=>setPassword(e.target.value)}
+                  onFocus={()=>setFocused({...focused, password: true})}
+                  onBlur={()=>setFocused({...focused, password: false})}
                   error={!!errors.password}
                   helperText={errors.password}
                 />
-                {password && !errors.password && (
-                  <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                {(focused.password || password) && !errors.password && (
+                  <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
                     최소 8자 이상의 비밀번호를 입력해주세요.
                   </FormHelperText>
                 )}
