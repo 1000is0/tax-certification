@@ -379,16 +379,20 @@ class CredentialController {
       // 이 검사를 먼저 수행하여 불필요한 API 호출을 방지
       const existingCredential = await TaxCredential.findByClientId(clientId);
       if (existingCredential) {
+        console.log('Duplicate credential found, returning error');
         return res.status(409).json({
           error: '입력하신 사업자등록번호의 인증서가 이미 등록되어 있습니다.',
           code: 'CREDENTIAL_ALREADY_EXISTS'
         });
       }
 
+      console.log('No duplicate found, proceeding with API call');
+      
       // Hyphen API를 통한 실제 연결 테스트
       const axios = require('axios');
       
       try {
+        console.log('Calling Hyphen API with clientId:', clientId);
         const response = await axios.post('https://api.hyphen.im/in0076000245', {
           loginMethod: 'CERT',
           signCert: certData,
@@ -405,10 +409,14 @@ class CredentialController {
           timeout: 10000 // 10초 타임아웃
         });
 
+        console.log('Hyphen API response received:', JSON.stringify(response.data).substring(0, 200));
+
         // Hyphen API 응답 구조 확인
         // 응답은 배열이며, 첫 번째 요소의 data.common.errYn을 확인
         const responseData = Array.isArray(response.data) ? response.data[0] : response.data;
         const commonData = responseData?.data?.common;
+        
+        console.log('commonData:', JSON.stringify(commonData));
 
         // errYn이 "Y"이면 에러
         if (commonData?.errYn === 'Y') {
