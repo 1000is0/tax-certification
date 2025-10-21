@@ -11,7 +11,8 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Divider
+  Divider,
+  FormHelperText
 } from '@mui/material'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -35,7 +36,7 @@ const schema = yup.object({
   certPassword: yup
     .string()
     .required('인증서 비밀번호는 필수입니다')
-    .min(4, '인증서 비밀번호는 최소 4자 이상이어야 합니다'),
+    .min(10, '인증서 비밀번호는 최소 10자 이상이어야 합니다'),
   userPassword: yup
     .string()
     .required('사용자 비밀번호는 필수입니다')
@@ -52,6 +53,7 @@ function CredentialFormPage() {
   const isEdit = Boolean(id)
   const [isLoading, setIsLoading] = useState(false)
   const [testResult, setTestResult] = useState(null)
+  const [focused, setFocused] = useState({})
 
   const {
     control,
@@ -145,14 +147,23 @@ function CredentialFormPage() {
                         name="certName"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="상호"
-                            placeholder="예: (주)홍길동세무회계사무소"
-                            fullWidth
-                            error={!!errors.certName}
-                            helperText={errors.certName?.message}
-                          />
+                          <Box>
+                            <TextField
+                              {...field}
+                              label="상호"
+                              placeholder="소나무세무그룹"
+                              fullWidth
+                              error={!!errors.certName}
+                              helperText={errors.certName?.message}
+                              onFocus={() => setFocused({ ...focused, certName: true })}
+                              onBlur={() => setFocused({ ...focused, certName: false })}
+                            />
+                            {(focused.certName || field.value) && !errors.certName && (
+                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
+                                사업자등록증에 표시된 상호를 정확히 입력하세요
+                              </FormHelperText>
+                            )}
+                          </Box>
                         )}
                       />
                     </Grid>
@@ -162,15 +173,25 @@ function CredentialFormPage() {
                         name="clientId"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="사업자등록번호"
-                            placeholder="1234567890"
-                            fullWidth
-                            error={!!errors.clientId}
-                            helperText={errors.clientId?.message}
-                            inputProps={{ maxLength: 10 }}
-                          />
+                          <Box>
+                            <TextField
+                              {...field}
+                              label="사업자등록번호"
+                              placeholder="1234567890"
+                              fullWidth
+                              error={!!errors.clientId}
+                              helperText={errors.clientId?.message}
+                              inputProps={{ maxLength: 10 }}
+                              onFocus={() => setFocused({ ...focused, clientId: true })}
+                              onBlur={() => setFocused({ ...focused, clientId: false })}
+                              onChange={(e) => field.onChange(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                            {(focused.clientId || field.value) && !errors.clientId && (
+                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
+                                숫자만 입력하세요
+                              </FormHelperText>
+                            )}
+                          </Box>
                         )}
                       />
                     </Grid>
@@ -193,16 +214,25 @@ function CredentialFormPage() {
                         name="certData"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="인증서 데이터 (PEM)"
-                            multiline
-                            rows={6}
-                            fullWidth
-                            error={!!errors.certData}
-                            helperText={errors.certData?.message || '-----BEGIN CERTIFICATE----- 로 시작하는 PEM 형식의 인증서 데이터를 입력하세요'}
-                            placeholder="-----BEGIN CERTIFICATE-----&#10;MIIF...&#10;-----END CERTIFICATE-----"
-                          />
+                          <Box>
+                            <TextField
+                              {...field}
+                              label="인증서 데이터 (PEM)"
+                              multiline
+                              rows={6}
+                              fullWidth
+                              error={!!errors.certData}
+                              helperText={errors.certData?.message}
+                              placeholder="MIIF...&#10;(BEGIN CERTIFICATE와 END CERTIFICATE 사이의 내용만)"
+                              onFocus={() => setFocused({ ...focused, certData: true })}
+                              onBlur={() => setFocused({ ...focused, certData: false })}
+                            />
+                            {(focused.certData || field.value) && !errors.certData && (
+                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
+                                BEGIN CERTIFICATE와 END CERTIFICATE를 제외한 사이의 데이터만 입력하세요
+                              </FormHelperText>
+                            )}
+                          </Box>
                         )}
                       />
                     </Grid>
@@ -212,16 +242,25 @@ function CredentialFormPage() {
                         name="privateKey"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="개인키 (PEM)"
-                            multiline
-                            rows={6}
-                            fullWidth
-                            error={!!errors.privateKey}
-                            helperText={errors.privateKey?.message || '-----BEGIN PRIVATE KEY----- 로 시작하는 PEM 형식의 개인키를 입력하세요'}
-                            placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIE...&#10;-----END PRIVATE KEY-----"
-                          />
+                          <Box>
+                            <TextField
+                              {...field}
+                              label="개인키 (PEM)"
+                              multiline
+                              rows={6}
+                              fullWidth
+                              error={!!errors.privateKey}
+                              helperText={errors.privateKey?.message}
+                              placeholder="MIIE...&#10;(BEGIN PRIVATE KEY와 END PRIVATE KEY 사이의 내용만)"
+                              onFocus={() => setFocused({ ...focused, privateKey: true })}
+                              onBlur={() => setFocused({ ...focused, privateKey: false })}
+                            />
+                            {(focused.privateKey || field.value) && !errors.privateKey && (
+                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
+                                BEGIN PRIVATE KEY와 END PRIVATE KEY를 제외한 사이의 데이터만 입력하세요
+                              </FormHelperText>
+                            )}
+                          </Box>
                         )}
                       />
                     </Grid>
@@ -231,14 +270,23 @@ function CredentialFormPage() {
                         name="certPassword"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="인증서 비밀번호"
-                            type="password"
-                            fullWidth
-                            error={!!errors.certPassword}
-                            helperText={errors.certPassword?.message}
-                          />
+                          <Box>
+                            <TextField
+                              {...field}
+                              label="인증서 비밀번호"
+                              type="password"
+                              fullWidth
+                              error={!!errors.certPassword}
+                              helperText={errors.certPassword?.message}
+                              onFocus={() => setFocused({ ...focused, certPassword: true })}
+                              onBlur={() => setFocused({ ...focused, certPassword: false })}
+                            />
+                            {(focused.certPassword || field.value) && !errors.certPassword && (
+                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
+                                최소 10자 이상의 인증서 비밀번호를 입력해주세요
+                              </FormHelperText>
+                            )}
+                          </Box>
                         )}
                       />
                     </Grid>
@@ -248,14 +296,23 @@ function CredentialFormPage() {
                         name="userPassword"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="사용자 비밀번호"
-                            type="password"
-                            fullWidth
-                            error={!!errors.userPassword}
-                            helperText={errors.userPassword?.message || '인증서 정보 암호화에 사용됩니다'}
-                          />
+                          <Box>
+                            <TextField
+                              {...field}
+                              label="사용자 비밀번호"
+                              type="password"
+                              fullWidth
+                              error={!!errors.userPassword}
+                              helperText={errors.userPassword?.message}
+                              onFocus={() => setFocused({ ...focused, userPassword: true })}
+                              onBlur={() => setFocused({ ...focused, userPassword: false })}
+                            />
+                            {(focused.userPassword || field.value) && !errors.userPassword && (
+                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
+                                최소 8자 이상의 비밀번호를 입력해주세요 (인증서 정보 암호화에 사용됩니다)
+                              </FormHelperText>
+                            )}
+                          </Box>
                         )}
                       />
                     </Grid>

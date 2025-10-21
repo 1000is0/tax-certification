@@ -26,7 +26,7 @@ export default function Layout({ children }) {
           </Typography>
           {user ? (
             <>
-              <Button color="inherit" component={Link} to="/credentials">인증서</Button>
+              <Button color="inherit" component={Link} to="/credentials">내 인증서</Button>
               {user.role === 'admin' && (
                 <Button color="inherit" component={Link} to="/admin">관리</Button>
               )}

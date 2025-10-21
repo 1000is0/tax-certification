@@ -117,7 +117,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
       <Paper sx={{ p: 4, width: 740 }}>
         <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>회원가입</Typography>
 
