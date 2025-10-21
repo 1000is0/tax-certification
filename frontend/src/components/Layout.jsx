@@ -22,7 +22,7 @@ export default function Layout({ children }) {
             to="/dashboard"
             sx={{ flexGrow: 1, color: '#fff', textDecoration: 'none' }}
           >
-            세무사 자동화
+            세무 업무 자동화
           </Typography>
           {user ? (
             <>

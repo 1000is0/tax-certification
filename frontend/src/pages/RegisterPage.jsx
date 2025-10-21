@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Paper, TextField, Button, Typography, Grid, Divider } from '@mui/material'
+import { Box, Paper, TextField, Button, Typography, Grid, Divider, FormHelperText } from '@mui/material'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../stores/authStore'
@@ -15,7 +15,45 @@ export default function RegisterPage() {
   // Step 1 fields (계정 생성)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [userId, setUserId] = useState('') // 별도 ID가 필요하면 사용, 현재는 name 대체 가능
+  const [confirmPassword, setConfirmPassword] = useState('')
+  
+  // 에러 상태
+  const [errors, setErrors] = useState({})
+
+  // 유효성 검사 함수들
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validatePassword = (password) => {
+    return password.length >= 8
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+    
+    if (!email) {
+      newErrors.email = '이메일을 입력해주세요.'
+    } else if (!validateEmail(email)) {
+      newErrors.email = '올바른 이메일 형식을 입력해주세요.'
+    }
+    
+    if (!password) {
+      newErrors.password = '비밀번호를 입력해주세요.'
+    } else if (!validatePassword(password)) {
+      newErrors.password = '비밀번호는 최소 8자 이상이어야 합니다.'
+    }
+    
+    if (!confirmPassword) {
+      newErrors.confirmPassword = '비밀번호 확인을 입력해주세요.'
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = '비밀번호가 일치하지 않습니다.'
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Step 2 fields (사업자/인증서)
   const [businessName, setBusinessName] = useState('') // 상호
@@ -26,13 +64,14 @@ export default function RegisterPage() {
 
   const onSubmitStep1 = async (e) => {
     e.preventDefault()
-    if (!email || !password) {
-      toast.error('이메일과 비밀번호를 입력해주세요.')
+    
+    if (!validateForm()) {
       return
     }
+    
     try {
-      // name은 우선 사용자 ID로 채워두고, 사업자명은 2단계에서 별도 저장/사용
-      await registerUser({ email, password, name: userId || email.split('@')[0] })
+      // name은 이메일의 @ 앞부분을 사용
+      await registerUser({ email, password, name: email.split('@')[0] })
       setStep(2)
     } catch (err) {
       toast.error(err.response?.data?.error || '회원가입 실패')
@@ -71,21 +110,51 @@ export default function RegisterPage() {
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
       <Paper sx={{ p: 4, width: 740 }}>
         <Typography variant="h5" gutterBottom>회원가입</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          1단계에서 계정 정보를 입력하고, 2단계에서 사업자/인증서 정보를 등록합니다.
-        </Typography>
 
         {step === 1 && (
           <form onSubmit={onSubmitStep1}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth label="ID (표시용)" placeholder="예: myid" value={userId} onChange={e=>setUserId(e.target.value)} />
+              <Grid item xs={12}>
+                <TextField 
+                  fullWidth 
+                  label="이메일" 
+                  value={email} 
+                  onChange={e=>setEmail(e.target.value)}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                />
+                {email && !errors.email && (
+                  <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                    올바른 이메일 형식으로 입력해주세요. (예: user@example.com)
+                  </FormHelperText>
+                )}
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="이메일" value={email} onChange={e=>setEmail(e.target.value)} />
+                <TextField 
+                  fullWidth 
+                  label="비밀번호" 
+                  type="password" 
+                  value={password} 
+                  onChange={e=>setPassword(e.target.value)}
+                  error={!!errors.password}
+                  helperText={errors.password}
+                />
+                {password && !errors.password && (
+                  <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                    최소 8자 이상의 비밀번호를 입력해주세요.
+                  </FormHelperText>
+                )}
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth label="비밀번호" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+                <TextField 
+                  fullWidth 
+                  label="비밀번호 확인" 
+                  type="password" 
+                  value={confirmPassword} 
+                  onChange={e=>setConfirmPassword(e.target.value)}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword}
+                />
               </Grid>
               <Grid item xs={12}>
                 <Button type="submit" variant="contained" disabled={isLoading}>다음</Button>
