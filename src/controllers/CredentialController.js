@@ -7,9 +7,12 @@ class CredentialController {
   // 인증서 정보 저장
   static async createCredential(req, res) {
     try {
+      console.log('[DEBUG] createCredential started');
+      
       // 입력 검증
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log('[DEBUG] Validation errors:', errors.array());
         return res.status(400).json({
           error: '입력 데이터가 유효하지 않습니다.',
           details: errors.array()
@@ -27,16 +30,22 @@ class CredentialController {
       } = req.body;
       const userId = req.user.userId;
 
+      console.log('[DEBUG] Request data:', { clientId, certName, certType, userId });
+
       // 사용자 확인
+      console.log('[DEBUG] Finding user:', userId);
       const user = await User.findById(userId);
       if (!user) {
+        console.log('[DEBUG] User not found');
         return res.status(404).json({
           error: '사용자를 찾을 수 없습니다.',
           code: 'USER_NOT_FOUND'
         });
       }
+      console.log('[DEBUG] User found');
 
       // 인증서 정보 생성 (마스터 키로 암호화)
+      console.log('[DEBUG] Creating credential...');
       const credential = await TaxCredential.create({
         userId,
         clientId,
@@ -47,6 +56,7 @@ class CredentialController {
         certType,
         expiresAt
       }); // userPassword 제거 - 마스터 키 사용
+      console.log('[DEBUG] Credential created:', credential.id);
 
       logSecurity('Credential created', {
         userId,
@@ -61,6 +71,8 @@ class CredentialController {
         credential: credential.toJSON()
       });
     } catch (error) {
+      console.error('[DEBUG] Error in createCredential:', error);
+      console.error('[DEBUG] Error stack:', error.stack);
       logError(error, { operation: 'CredentialController.createCredential' });
       
       if (error.message.includes('사업자등록번호')) {
@@ -72,7 +84,8 @@ class CredentialController {
 
       res.status(500).json({
         error: '인증서 정보 저장 중 오류가 발생했습니다.',
-        code: 'CREDENTIAL_CREATE_ERROR'
+        code: 'CREDENTIAL_CREATE_ERROR',
+        details: error.message // 디버그용
       });
     }
   }

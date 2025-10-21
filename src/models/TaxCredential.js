@@ -255,7 +255,7 @@ class TaxCredential {
         encrypted_cert_password: this.encryptedCertPassword,
         encryption_iv: this.encryptionIv,
         encryption_tag: this.encryptionTag,
-        encryption_salt: null // 마스터 키 사용하므로 salt 불필요
+        encryption_salt: this.encryptionSalt // DB 값 사용 (null이면 마스터 키, 있으면 기존 방식)
       };
 
       const decrypted = encryptionService.decryptCredentials(encryptedData); // userPassword 제거
