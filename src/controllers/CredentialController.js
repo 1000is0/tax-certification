@@ -412,9 +412,8 @@ class CredentialController {
         console.log('Hyphen API response received:', JSON.stringify(response.data).substring(0, 200));
 
         // Hyphen API 응답 구조 확인
-        // 응답은 배열이며, 첫 번째 요소의 data.common.errYn을 확인
-        const responseData = Array.isArray(response.data) ? response.data[0] : response.data;
-        const commonData = responseData?.data?.common;
+        // 응답은 { common: {...}, data: {...} } 형태
+        const commonData = response.data?.common;
         
         console.log('commonData:', JSON.stringify(commonData));
 
