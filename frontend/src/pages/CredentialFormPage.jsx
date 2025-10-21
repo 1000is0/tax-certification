@@ -253,8 +253,6 @@ function CredentialFormPage() {
                           <Box>
                             <TextField
                               label="인증서 데이터 (PEM)"
-                              multiline
-                              rows={6}
                               fullWidth
                               disabled={testCompleted}
                               error={!!errors.certData}
@@ -262,20 +260,25 @@ function CredentialFormPage() {
                               placeholder="MIIF... (-----BEGIN CERTIFICATE----- 와 -----END CERTIFICATE----- 사이의 내용만)"
                               value={field.value || ''}
                               onChange={(e) => {
-                                const cleaned = e.target.value.replace(/[\r\n\t\s]/g, '');
+                                const cleaned = e.target.value
+                                  .replace(/[\r\n\t\s]/g, '')
+                                  .replace(/\\n/g, '')
+                                  .replace(/\\r/g, '')
+                                  .replace(/\\t/g, '');
                                 field.onChange(cleaned);
                               }}
                               onPaste={(e) => {
                                 e.preventDefault();
                                 const pastedText = e.clipboardData.getData('text');
-                                const cleaned = pastedText.replace(/[\r\n\t\s]/g, '');
+                                const cleaned = pastedText
+                                  .replace(/[\r\n\t\s]/g, '')
+                                  .replace(/\\n/g, '')
+                                  .replace(/\\r/g, '')
+                                  .replace(/\\t/g, '');
                                 field.onChange(cleaned);
                               }}
                               onBlur={field.onBlur}
                               name={field.name}
-                              inputProps={{
-                                style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' }
-                              }}
                             />
                             {!errors.certData && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
@@ -295,8 +298,6 @@ function CredentialFormPage() {
                           <Box>
                             <TextField
                               label="개인키 (PEM)"
-                              multiline
-                              rows={6}
                               fullWidth
                               disabled={testCompleted}
                               error={!!errors.privateKey}
@@ -304,20 +305,25 @@ function CredentialFormPage() {
                               placeholder="MIIE... (-----BEGIN PRIVATE KEY----- 와 -----END PRIVATE KEY----- 사이의 내용만)"
                               value={field.value || ''}
                               onChange={(e) => {
-                                const cleaned = e.target.value.replace(/[\r\n\t\s]/g, '');
+                                const cleaned = e.target.value
+                                  .replace(/[\r\n\t\s]/g, '')
+                                  .replace(/\\n/g, '')
+                                  .replace(/\\r/g, '')
+                                  .replace(/\\t/g, '');
                                 field.onChange(cleaned);
                               }}
                               onPaste={(e) => {
                                 e.preventDefault();
                                 const pastedText = e.clipboardData.getData('text');
-                                const cleaned = pastedText.replace(/[\r\n\t\s]/g, '');
+                                const cleaned = pastedText
+                                  .replace(/[\r\n\t\s]/g, '')
+                                  .replace(/\\n/g, '')
+                                  .replace(/\\r/g, '')
+                                  .replace(/\\t/g, '');
                                 field.onChange(cleaned);
                               }}
                               onBlur={field.onBlur}
                               name={field.name}
-                              inputProps={{
-                                style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' }
-                              }}
                             />
                             {!errors.privateKey && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
