@@ -180,8 +180,8 @@ function CredentialFormPage() {
       console.log('NX2 응답:', response.data)
       
       // NX2 응답 확인
-      if (response.data.errYn === 'N' && response.data.certList) {
-        setCertList(response.data.certList)
+      if (response.data.errYn === 'N' && response.data.list) {
+        setCertList(response.data.list)
         setCertDialogOpen(true)
         toast.success('인증서 목록을 불러왔습니다.')
       } else if (response.data.errYn === 'Y') {
