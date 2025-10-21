@@ -240,11 +240,23 @@ function CredentialFormPage() {
             <Grid item xs={12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    인증서 정보
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">
+                      인증서 정보
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => {
+                        const filePath = 'file:///C:/Users/OWNER/Desktop/temporary%20files/251019/HYPHEN_NxWeb_Guide/NxWeb_Guide.html';
+                        window.open(filePath, '_blank');
+                      }}
+                    >
+                      인증서 정보 추출
+                    </Button>
+                  </Box>
                   
-                  <Grid container spacing={2}>
+                  <Grid container spacing={3}>
                     <Grid item xs={12}>
                       <Controller
                         name="certData"
@@ -279,6 +291,15 @@ function CredentialFormPage() {
                               }}
                               onBlur={field.onBlur}
                               name={field.name}
+                              InputProps={{
+                                style: { 
+                                  minHeight: '80px',
+                                  alignItems: 'flex-start',
+                                  paddingTop: '16px',
+                                  paddingBottom: '16px'
+                                }
+                              }}
+                              sx={{ mb: 2 }}
                             />
                             {!errors.certData && (
                               <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
