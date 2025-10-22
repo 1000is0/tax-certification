@@ -508,7 +508,40 @@ class PaymentController {
         });
 
       } else if (payment.paymentType === 'subscription') {
-        // 구독 생성 (Subscription.create 내부에서 크레딧 지급)
+        // 기존 구독 확인
+        const existingSubscription = await Subscription.findByUserId(userId);
+        if (existingSubscription) {
+          // 기존 구독이 있으면 업데이트
+          await existingSubscription.update({
+            tier: payment.relatedId,
+            billingKey: nicepayResult.billingKey,
+            status: 'active',
+            monthly_credit_quota: require('../models/Subscription').TIERS[payment.relatedId].monthlyCredits,
+            price: require('../models/Subscription').TIERS[payment.relatedId].price
+          });
+          
+          // 크레딧 지급
+          const tierConfig = require('../models/Subscription').TIERS[payment.relatedId];
+          await CreditTransaction.create({
+            userId,
+            amount: tierConfig.monthlyCredits,
+            type: 'subscription_grant',
+            description: `${tierConfig.name} 플랜 구독 시작`,
+            relatedId: existingSubscription.id,
+            expiresAt: null
+          });
+
+          logger.info('기존 구독 업데이트 및 크레딧 지급 완료', { orderId, userId, tier: payment.relatedId, credits: tierConfig.monthlyCredits });
+
+          return res.json({
+            success: true,
+            message: `구독이 업데이트되었습니다. ${tierConfig.monthlyCredits} 크레딧이 지급되었습니다.`,
+            payment: payment.toJSON(),
+            subscription: existingSubscription.toJSON()
+          });
+        }
+
+        // 새 구독 생성 (Subscription.create 내부에서 크레딧 지급)
         const tier = payment.relatedId;
         const subscription = await Subscription.create({
           userId,

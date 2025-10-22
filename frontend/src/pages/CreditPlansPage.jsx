@@ -83,9 +83,29 @@ export default function CreditPlansPage() {
       return
     }
     
-    // 유료 구독 중일 때 무료 플랜 버튼 숨김
-    if (plan.tier === 'free' && currentSubscription && currentSubscription.status === 'active' && currentSubscription.tier !== 'free') {
-      return
+    // 무료 플랜 버튼 클릭 시 처리
+    if (plan.tier === 'free') {
+      // 유료 구독 중인 경우 구독 취소 (무료 플랜으로 다운그레이드)
+      if (currentSubscription && currentSubscription.status === 'active' && currentSubscription.tier !== 'free') {
+        const confirmed = window.confirm(
+          '무료 플랜으로 변경하시겠습니까?\n\n' +
+          '다음 결제일부터 무료 플랜이 적용되며, 현재 크레딧은 유지됩니다.'
+        )
+        
+        if (!confirmed) return
+        
+        try {
+          await subscriptionService.changeTier('free')
+          toast.success('무료 플랜으로 변경이 예약되었습니다.')
+          fetchCurrentSubscription()
+        } catch (error) {
+          console.error('구독 취소 오류:', error)
+          toast.error(error.response?.data?.error || '구독 취소 중 오류가 발생했습니다.')
+        }
+        return
+      }
+      
+      // 무료 플랜 사용자이거나 구독이 없는 경우는 기존 로직 유지
     }
 
     // 이미 구독 중인 경우 플랜 변경

@@ -149,7 +149,7 @@ class SubscriptionController {
         });
       }
 
-      // pending_tier가 있으면 다운그레이드 예약 상태이므로 그것과 비교
+      // 다운그레이드 예약 상태에서 업그레이드할 때는 현재 티어 기준으로 계산
       // 다운그레이드 취소인지 확인
       if (subscription.pendingTier && newTier === subscription.tier) {
         return res.json({
@@ -163,7 +163,10 @@ class SubscriptionController {
         });
       }
 
-      const effectiveTier = subscription.pendingTier || subscription.tier;
+      // 업그레이드인 경우 현재 티어 기준, 다운그레이드인 경우 예약 티어 기준
+      const isUpgrade = Subscription.TIERS[newTier].price > (Subscription.TIERS[subscription.tier].price || 0);
+      const effectiveTier = isUpgrade ? subscription.tier : (subscription.pendingTier || subscription.tier);
+      
       const oldTierConfig = Subscription.TIERS[effectiveTier];
       const newTierConfig = Subscription.TIERS[newTier];
 
@@ -284,10 +287,12 @@ class SubscriptionController {
         });
       }
 
-      const effectiveTier = subscription.pendingTier || subscription.tier;
+      // 업그레이드인 경우 현재 티어 기준, 다운그레이드인 경우 예약 티어 기준
+      const isUpgrade = Subscription.TIERS[newTier].price > (Subscription.TIERS[subscription.tier].price || 0);
+      const effectiveTier = isUpgrade ? subscription.tier : (subscription.pendingTier || subscription.tier);
+      
       const oldTierConfig = Subscription.TIERS[effectiveTier];
       const newTierConfig = Subscription.TIERS[newTier];
-      const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
 
       let paymentResult = null;
 
