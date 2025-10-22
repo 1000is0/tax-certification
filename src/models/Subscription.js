@@ -662,6 +662,7 @@ class Subscription {
       id: this.id,
       userId: this.userId,
       tier: this.tier,
+      pendingTier: this.pendingTier,
       tierName: Subscription.TIERS[this.tier]?.name || this.tier,
       status: this.status,
       billingCycleStart: this.billingCycleStart,

@@ -53,6 +53,16 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         throw new Error('결제 모듈을 불러오지 못했습니다. 페이지를 새로고침해주세요.')
       }
 
+      // 구매자 정보 준비
+      const buyerInfo = {
+        buyerName: user?.name || '미입력',
+        buyerTel: user?.phone ? user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3') : '000-0000-0000',
+        buyerEmail: user?.email || ''
+      }
+      
+      console.log('구매자 정보:', buyerInfo)
+      console.log('사용자 정보:', user)
+
       // 나이스페이 결제창 호출
       AUTHNICE.requestPay({
         clientId, // 가맹점 식별 코드
@@ -62,9 +72,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         goodsName: orderName,
         returnUrl, // 백엔드에서 전달받은 returnUrl 사용
         // 구매자 정보 추가 (나이스페이 JS SDK에서 직접 전달)
-        buyerName: user?.name || '미입력',
-        buyerTel: user?.phone ? user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3') : '000-0000-0000',
-        buyerEmail: user?.email || '',
+        ...buyerInfo,
         fnSuccess: (result) => {
           // 결제 성공 시 콜백
           // returnUrl로 이미 처리되므로 여기서는 로그만 남김

@@ -83,8 +83,8 @@ export default function CreditPlansPage() {
       return
     }
     
-    if (plan.tier === 'free') {
-      // 무료 플랜은 구독 취소로만 변경 가능하므로 버튼 숨김
+    // 유료 구독 중일 때 무료 플랜 버튼 숨김
+    if (plan.tier === 'free' && currentSubscription && currentSubscription.status === 'active' && currentSubscription.tier !== 'free') {
       return
     }
 
