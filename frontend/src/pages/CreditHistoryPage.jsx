@@ -24,6 +24,7 @@ export default function CreditHistoryPage() {
   const [balance, setBalance] = useState(0)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(25)
+  const [totalCount, setTotalCount] = useState(0)
 
   useEffect(() => {
     fetchData()
@@ -34,13 +35,14 @@ export default function CreditHistoryPage() {
       setLoading(true)
       const [historyData, balanceData] = await Promise.all([
         creditService.getHistory({ 
-          limit: rowsPerPage, 
-          offset: page * rowsPerPage 
+          page: page + 1, // API는 1-based page
+          limit: rowsPerPage
         }),
         creditService.getBalance()
       ])
       
       setTransactions(historyData.transactions || [])
+      setTotalCount(historyData.totalCount || 0)
       setBalance(balanceData.balance)
     } catch (err) {
       toast.error(err.response?.data?.error || '데이터를 가져오지 못했습니다.')
@@ -153,14 +155,14 @@ export default function CreditHistoryPage() {
 
             <TablePagination
               component="div"
-              count={-1} // 전체 개수를 모르므로 -1
+              count={totalCount}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[10, 25, 50, 100]}
               labelRowsPerPage="페이지당 행 수:"
-              labelDisplayedRows={({ from, to }) => `${from}-${to}`}
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 전체 ${count}`}
             />
           </>
         )}
