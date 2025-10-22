@@ -18,7 +18,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const { type, amount, orderName, credits, tier } = paymentData || {}
+  const { type, amount, orderName, credits, tier, newTier } = paymentData || {}
 
   /**
    * 나이스페이 결제창 호출
@@ -40,6 +40,8 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         prepareResult = await paymentService.prepareSubscriptionPayment({
           tier
         })
+      } else if (type === 'tier_upgrade') {
+        prepareResult = await paymentService.prepareTierUpgradePayment(newTier)
       }
 
       const { orderId, clientToken, clientId, returnUrl } = prepareResult

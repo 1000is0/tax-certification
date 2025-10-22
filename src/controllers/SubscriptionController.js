@@ -133,12 +133,91 @@ class SubscriptionController {
   }
 
   /**
+   * 플랜 변경 견적 조회 (업그레이드 시 추가 결제 금액 확인)
+   */
+  static async getChangeTierQuote(req, res) {
+    try {
+      const userId = req.user.userId;
+      const { newTier } = req.query;
+      
+      const subscription = await Subscription.findByUserId(userId);
+      
+      if (!subscription) {
+        return res.status(404).json({
+          error: '활성화된 구독을 찾을 수 없습니다.',
+          code: 'SUBSCRIPTION_NOT_FOUND'
+        });
+      }
+
+      const oldTierConfig = Subscription.TIERS[subscription.tier];
+      const newTierConfig = Subscription.TIERS[newTier];
+
+      if (!newTierConfig) {
+        return res.status(400).json({
+          error: '유효하지 않은 티어입니다.',
+          code: 'INVALID_TIER'
+        });
+      }
+
+      // 업그레이드 여부
+      const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
+      const isDowngrade = newTierConfig.price < (oldTierConfig.price || 0);
+
+      if (isUpgrade) {
+        // 일할계산
+        const now = new Date();
+        const cycleEnd = new Date(subscription.billingCycleEnd);
+        const cycleStart = new Date(subscription.billingCycleStart);
+        const totalDays = Math.ceil((cycleEnd - cycleStart) / (1000 * 60 * 60 * 24));
+        const remainingDays = Math.ceil((cycleEnd - now) / (1000 * 60 * 60 * 24));
+        const remainingRatio = remainingDays / totalDays;
+
+        const oldPriceProrated = (oldTierConfig.price || 0) * remainingRatio;
+        const newPriceProrated = newTierConfig.price * remainingRatio;
+        const additionalCharge = Math.ceil(newPriceProrated - oldPriceProrated);
+        const proratedCredits = newTierConfig.monthlyCredits 
+          ? Math.floor(newTierConfig.monthlyCredits * remainingRatio)
+          : 0;
+
+        res.json({
+          type: 'upgrade',
+          additionalCharge,
+          proratedCredits,
+          remainingDays,
+          totalDays,
+          currentTier: oldTierConfig.name,
+          newTier: newTierConfig.name
+        });
+      } else if (isDowngrade) {
+        res.json({
+          type: 'downgrade',
+          message: `다음 결제일(${subscription.billingCycleEnd})부터 ${newTierConfig.name} 플랜이 적용됩니다.`,
+          currentTier: oldTierConfig.name,
+          newTier: newTierConfig.name,
+          nextBillingDate: subscription.billingCycleEnd
+        });
+      } else {
+        res.status(400).json({
+          error: '동일한 플랜입니다.',
+          code: 'SAME_TIER'
+        });
+      }
+    } catch (error) {
+      logError(error, { operation: 'SubscriptionController.getChangeTierQuote' });
+      res.status(500).json({
+        error: '견적 조회 중 오류가 발생했습니다.',
+        code: 'QUOTE_ERROR'
+      });
+    }
+  }
+
+  /**
    * 구독 플랜 변경 (업그레이드/다운그레이드)
    */
   static async changeTier(req, res) {
     try {
       const userId = req.user.userId;
-      const { newTier } = req.body;
+      const { newTier, paymentTid } = req.body; // 업그레이드 시 결제 TID 필요
       
       const subscription = await Subscription.findByUserId(userId);
       
@@ -162,28 +241,57 @@ class SubscriptionController {
           code: 'SAME_TIER'
         });
       }
-      
-      // 티어 변경 (일할계산 포함)
-      await subscription.changeTier(newTier);
-      
+
+      const oldTierConfig = Subscription.TIERS[subscription.tier];
       const newTierConfig = Subscription.TIERS[newTier];
+      const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
+
+      let paymentResult = null;
+
+      // 업그레이드인 경우 결제 필요
+      if (isUpgrade) {
+        if (!paymentTid) {
+          return res.status(400).json({
+            error: '업그레이드 시 결제가 필요합니다.',
+            code: 'PAYMENT_REQUIRED'
+          });
+        }
+
+        // 결제 검증 (이미 승인된 결제인지 확인)
+        const payment = await Payment.findByTid(paymentTid);
+        if (!payment || payment.userId !== userId || payment.status !== 'paid') {
+          return res.status(400).json({
+            error: '유효하지 않은 결제 정보입니다.',
+            code: 'INVALID_PAYMENT'
+          });
+        }
+
+        paymentResult = payment;
+      }
+      
+      // 티어 변경 (업그레이드는 결제 정보 포함, 다운그레이드는 null)
+      const result = await subscription.changeTier(newTier, paymentResult);
       
       logger.info('구독 플랜 변경 완료', { 
         userId, 
         subscriptionId: subscription.id, 
         oldTier: subscription.tier,
-        newTier 
+        newTier,
+        type: result.type
       });
       
       res.json({
         success: true,
-        message: `${newTierConfig.name} 플랜으로 변경되었습니다.`,
-        subscription: subscription.toJSON()
+        message: result.type === 'upgrade' 
+          ? `${newTierConfig.name} 플랜으로 업그레이드되었습니다. ${result.proratedCredits} 크레딧이 지급되었습니다.`
+          : result.message,
+        subscription: subscription.toJSON(),
+        ...result
       });
     } catch (error) {
       logError(error, { operation: 'SubscriptionController.changeTier' });
       res.status(500).json({
-        error: '플랜 변경 중 오류가 발생했습니다.',
+        error: error.message || '플랜 변경 중 오류가 발생했습니다.',
         code: 'SUBSCRIPTION_CHANGE_ERROR'
       });
     }
@@ -303,110 +411,6 @@ class SubscriptionController {
       res.status(500).json({
         error: '구독 갱신 중 오류가 발생했습니다.',
         code: 'SUBSCRIPTION_RENEW_ERROR'
-      });
-    }
-  }
-  
-  /**
-   * 구독 갱신 테스트 (관리자 전용)
-   * 특정 사용자의 구독을 즉시 갱신 테스트
-   */
-  static async testRenewSubscription(req, res) {
-    try {
-      const { userId } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({
-          error: 'userId가 필요합니다.',
-          code: 'MISSING_USER_ID'
-        });
-      }
-
-      const subscription = await Subscription.findByUserId(userId);
-      
-      if (!subscription) {
-        return res.status(404).json({
-          error: '구독을 찾을 수 없습니다.',
-          code: 'SUBSCRIPTION_NOT_FOUND'
-        });
-      }
-
-      if (subscription.status !== 'active') {
-        return res.status(400).json({
-          error: 'active 상태의 구독만 갱신할 수 있습니다.',
-          code: 'SUBSCRIPTION_NOT_ACTIVE'
-        });
-      }
-
-      // 빌링키로 결제
-      if (!subscription.billingKey) {
-        return res.status(400).json({
-          error: '빌링키가 없습니다.',
-          code: 'NO_BILLING_KEY'
-        });
-      }
-
-      const orderId = `TEST_SUB_${subscription.id}_${Date.now()}`;
-      const tierConfig = Subscription.TIERS[subscription.tier];
-
-      const paymentResult = await NicepayService.payWithBillingKey({
-        billingKey: subscription.billingKey,
-        orderId,
-        amount: tierConfig.price,
-        goodsName: `[테스트] ${tierConfig.name} 플랜 월간 구독`,
-        mallUserId: subscription.userId
-      });
-
-      if (!paymentResult.success) {
-        return res.status(400).json({
-          error: paymentResult.error,
-          code: 'PAYMENT_FAILED'
-        });
-      }
-
-      // 결제 기록 생성
-      await Payment.create({
-        userId: subscription.userId,
-        orderId,
-        orderName: `[테스트] ${tierConfig.name} 플랜 월간 구독`,
-        amount: tierConfig.price,
-        paymentType: 'subscription_renewal',
-        relatedId: subscription.id,
-        tid: paymentResult.tid,
-        payMethod: 'card',
-        status: 'paid'
-      });
-
-      // 구독 갱신
-      await subscription.renew();
-
-      // 크레딧 지급
-      await CreditTransaction.create({
-        userId: subscription.userId,
-        amount: tierConfig.monthlyCredits,
-        type: 'subscription_grant',
-        description: `[테스트] ${tierConfig.name} 플랜 월간 크레딧`,
-        relatedId: subscription.id,
-        expiresAt: subscription.billingCycleEnd
-      });
-
-      logger.info('구독 갱신 테스트 성공', { subscriptionId: subscription.id, userId });
-
-      res.json({
-        success: true,
-        message: '구독 갱신 테스트가 완료되었습니다.',
-        subscription: subscription.toJSON(),
-        payment: {
-          orderId,
-          tid: paymentResult.tid,
-          amount: tierConfig.price
-        }
-      });
-    } catch (error) {
-      logError(error, { operation: 'SubscriptionController.testRenewSubscription' });
-      res.status(500).json({
-        error: error.message || '구독 갱신 테스트 중 오류가 발생했습니다.',
-        code: 'TEST_RENEW_ERROR'
       });
     }
   }

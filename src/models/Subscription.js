@@ -380,9 +380,9 @@ class Subscription {
   }
 
   /**
-   * 티어 변경 (일할계산 및 크레딧 지급)
+   * 티어 변경 (업그레이드: 일할계산 + 추가결제, 다운그레이드: 다음 주기부터 적용)
    */
-  async changeTier(newTier) {
+  async changeTier(newTier, paymentResult = null) {
     try {
       const oldTierConfig = Subscription.TIERS[this.tier];
       const newTierConfig = Subscription.TIERS[newTier];
@@ -390,6 +390,10 @@ class Subscription {
       if (!newTierConfig) {
         throw new Error('유효하지 않은 티어입니다.');
       }
+
+      // 업그레이드 여부 판단 (가격 비교)
+      const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
+      const isDowngrade = newTierConfig.price < (oldTierConfig.price || 0);
 
       // 일할계산: 남은 기간 계산
       const now = new Date();
@@ -404,48 +408,94 @@ class Subscription {
       // 남은 기간 비율
       const remainingRatio = remainingDays / totalDays;
 
-      // 일할계산된 크레딧 (남은 기간에 비례, null 체크)
-      const proratedCredits = newTierConfig.monthlyCredits 
-        ? Math.floor(newTierConfig.monthlyCredits * remainingRatio)
-        : 0;
+      if (isUpgrade) {
+        // 업그레이드: 차액 결제 필요
+        const oldPriceProrated = (oldTierConfig.price || 0) * remainingRatio;
+        const newPriceProrated = newTierConfig.price * remainingRatio;
+        const additionalCharge = Math.ceil(newPriceProrated - oldPriceProrated);
 
-      logger.info('구독 티어 변경 - 일할계산', {
-        userId: this.userId,
-        oldTier: this.tier,
-        newTier,
-        totalDays,
-        remainingDays,
-        remainingRatio,
-        fullCredits: newTierConfig.monthlyCredits,
-        proratedCredits
-      });
-
-      // 티어 업데이트
-      await this.update({
-        tier: newTier,
-        monthly_credit_quota: newTierConfig.monthlyCredits,
-        price: newTierConfig.price
-      });
-
-      // users 테이블 업데이트
-      await query('users', 'update', {
-        where: { id: this.userId },
-        data: { subscription_tier: newTier }
-      });
-
-      // 일할계산된 크레딧 지급 (0보다 클 때만)
-      if (proratedCredits > 0 && newTierConfig.monthlyCredits) {
-        await CreditTransaction.create({
+        logger.info('구독 업그레이드 - 일할계산', {
           userId: this.userId,
-          amount: proratedCredits,
-          type: 'subscription_grant',
-          description: `${newTierConfig.name} 플랜 업그레이드 (일할계산: ${remainingDays}일/${totalDays}일)`,
-          relatedId: this.id,
-          expiresAt: cycleEnd.toISOString()
+          oldTier: this.tier,
+          newTier,
+          totalDays,
+          remainingDays,
+          remainingRatio,
+          oldPriceProrated,
+          newPriceProrated,
+          additionalCharge,
+          paymentProvided: !!paymentResult
         });
+
+        // 결제 정보가 없으면 오류
+        if (!paymentResult) {
+          throw new Error('업그레이드 시 추가 결제 정보가 필요합니다.');
+        }
+
+        // 일할계산된 크레딧 (업그레이드)
+        const proratedCredits = newTierConfig.monthlyCredits 
+          ? Math.floor(newTierConfig.monthlyCredits * remainingRatio)
+          : 0;
+
+        // 티어 업데이트
+        await this.update({
+          tier: newTier,
+          monthly_credit_quota: newTierConfig.monthlyCredits,
+          price: newTierConfig.price
+        });
+
+        // users 테이블 업데이트
+        await query('users', 'update', {
+          where: { id: this.userId },
+          data: { subscription_tier: newTier }
+        });
+
+        // 일할계산된 크레딧 지급
+        if (proratedCredits > 0) {
+          await CreditTransaction.create({
+            userId: this.userId,
+            amount: proratedCredits,
+            type: 'subscription_grant',
+            description: `${newTierConfig.name} 플랜 업그레이드 (일할계산: ${remainingDays}일/${totalDays}일)`,
+            relatedId: this.id,
+            expiresAt: cycleEnd.toISOString()
+          });
+        }
+
+        return { type: 'upgrade', additionalCharge, proratedCredits };
+
+      } else if (isDowngrade) {
+        // 다운그레이드: 다음 주기부터 적용, 즉시 크레딧 변경 없음
+        logger.info('구독 다운그레이드 - 다음 주기부터 적용', {
+          userId: this.userId,
+          oldTier: this.tier,
+          newTier,
+          currentCycleEnd: this.billingCycleEnd,
+          nextPrice: newTierConfig.price,
+          nextCredits: newTierConfig.monthlyCredits
+        });
+
+        // 티어 업데이트 (다음 주기부터 적용)
+        await this.update({
+          tier: newTier,
+          monthly_credit_quota: newTierConfig.monthlyCredits,
+          price: newTierConfig.price
+        });
+
+        // users 테이블 업데이트
+        await query('users', 'update', {
+          where: { id: this.userId },
+          data: { subscription_tier: newTier }
+        });
+
+        // 크레딧 지급 없음 (현재 주기 크레딧 유지)
+        return { type: 'downgrade', message: `다음 결제일(${this.billingCycleEnd})부터 ${newTierConfig.name} 플랜이 적용됩니다.` };
+
+      } else {
+        // 동일 가격 (예: monthly ↔ yearly)
+        throw new Error('동일하거나 유효하지 않은 플랜 변경입니다.');
       }
 
-      return this;
     } catch (error) {
       logError(error, { operation: 'Subscription.changeTier', subscriptionId: this.id, newTier });
       throw error;

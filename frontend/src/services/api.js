@@ -281,6 +281,16 @@ export const paymentService = {
     }
   },
 
+  // 플랜 업그레이드 결제 준비
+  async prepareTierUpgradePayment(newTier) {
+    try {
+      const response = await api.post('/payments/prepare/tier-upgrade', { newTier })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
   // 결제 승인
   async approvePayment(data) {
     try {
@@ -343,10 +353,22 @@ export const subscriptionService = {
     }
   },
 
-  // 구독 플랜 변경
-  async changeTier(newTier) {
+  // 플랜 변경 견적 조회
+  async getChangeTierQuote(newTier) {
     try {
-      const response = await api.post('/subscriptions/change-tier', { newTier })
+      const response = await api.get('/subscriptions/change-tier-quote', {
+        params: { newTier }
+      })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 구독 플랜 변경 (다운그레이드 또는 결제 완료 후 업그레이드)
+  async changeTier(newTier, paymentTid = null) {
+    try {
+      const response = await api.post('/subscriptions/change-tier', { newTier, paymentTid })
       return response.data
     } catch (error) {
       throw error
@@ -389,16 +411,6 @@ export const adminService = {
   async grantCredits(data) {
     try {
       const response = await api.post('/admin/credits/grant', data)
-      return response.data
-    } catch (error) {
-      throw error
-    }
-  },
-
-  // 구독 갱신 테스트
-  async testRenewSubscription(userId) {
-    try {
-      const response = await api.post('/admin/subscriptions/test-renew', { userId })
       return response.data
     } catch (error) {
       throw error

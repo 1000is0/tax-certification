@@ -84,7 +84,7 @@ class Payment {
   }
 
   /**
-   * 나이스페이 TID로 결제 조회
+   * TID로 결제 조회
    */
   static async findByTid(tid) {
     try {

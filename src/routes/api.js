@@ -77,6 +77,7 @@ router.get('/credits/subscription', authenticateToken, CreditController.getMySub
 router.get('/subscriptions/my', authenticateToken, SubscriptionController.getMySubscription);
 router.post('/subscriptions/cancel', authenticateToken, SubscriptionController.cancelSubscription);
 router.post('/subscriptions/reactivate', authenticateToken, SubscriptionController.reactivateSubscription);
+router.get('/subscriptions/change-tier-quote', authenticateToken, SubscriptionController.getChangeTierQuote);
 router.post('/subscriptions/change-tier', authenticateToken, SubscriptionController.changeTier);
 
 // 구독 관리 API (내부/크론잡용)
@@ -86,6 +87,7 @@ router.post('/subscriptions/expire', SubscriptionController.expireSubscriptions)
 // 결제 관련 라우트
 router.post('/payments/prepare/credit', authenticateToken, PaymentController.prepareCreditPayment);
 router.post('/payments/prepare/subscription', authenticateToken, PaymentController.prepareSubscriptionPayment);
+router.post('/payments/prepare/tier-upgrade', authenticateToken, PaymentController.prepareTierUpgradePayment);
 router.all('/payments/callback', PaymentController.paymentCallback); // 나이스페이 결제 완료 콜백 (GET/POST 모두 허용, 인증 불필요)
 router.post('/payments/approve', authenticateToken, PaymentController.approvePayment);
 router.post('/payments/cancel', authenticateToken, PaymentController.cancelPayment);
@@ -96,7 +98,6 @@ router.get('/admin/credentials', authenticateToken, requireAdmin, CredentialCont
 router.get('/admin/credentials/stats', authenticateToken, requireAdmin, CredentialController.getCredentialStats);
 router.get('/admin/users', authenticateToken, requireAdmin, UserController.getAllUsers);
 router.post('/admin/credits/grant', authenticateToken, requireAdmin, CreditController.adminGrant);
-router.post('/admin/subscriptions/test-renew', authenticateToken, requireAdmin, SubscriptionController.testRenewSubscription);
 
 // Make 웹훅용 라우트 (API 키 인증)
 router.post('/webhook/decrypt-credentials', authenticateAPIKey, clientIdValidation, WebhookController.decryptCredentials);

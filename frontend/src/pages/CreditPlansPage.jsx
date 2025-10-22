@@ -91,15 +91,45 @@ export default function CreditPlansPage() {
     // 이미 구독 중인 경우 플랜 변경
     if (currentSubscription && currentSubscription.status === 'active') {
       try {
-        const confirmed = window.confirm(
-          `${plan.name} 플랜으로 변경하시겠습니까?\n\n남은 기간에 비례하여 크레딧이 지급됩니다.`
-        )
+        // 플랜 변경 견적 조회
+        const quote = await subscriptionService.getChangeTierQuote(plan.tier)
         
-        if (!confirmed) return
-        
-        const result = await subscriptionService.changeTier(plan.tier)
-        toast.success(result.message || '플랜이 변경되었습니다!')
-        fetchData() // 데이터 새로고침
+        if (quote.type === 'upgrade') {
+          // 업그레이드: 추가 결제 필요
+          const confirmed = window.confirm(
+            `${plan.name} 플랜으로 업그레이드하시겠습니까?\n\n` +
+            `추가 결제 금액: ₩${quote.additionalCharge.toLocaleString()}\n` +
+            `일할 계산: ${quote.remainingDays}일 / ${quote.totalDays}일\n` +
+            `지급 크레딧: ${quote.proratedCredits.toLocaleString()}개`
+          )
+          
+          if (!confirmed) return
+          
+          // 결제 모달 열기 (업그레이드용)
+          setPaymentData({
+            type: 'tier_upgrade',
+            newTier: plan.tier,
+            amount: quote.additionalCharge,
+            orderName: `${quote.currentTier} → ${quote.newTier} 업그레이드`,
+            quote
+          })
+          setPaymentModalOpen(true)
+
+        } else if (quote.type === 'downgrade') {
+          // 다운그레이드: 즉시 변경, 크레딧 유지
+          const confirmed = window.confirm(
+            `${plan.name} 플랜으로 다운그레이드하시겠습니까?\n\n` +
+            `${quote.message}\n\n` +
+            `현재 보유 중인 크레딧은 유지됩니다.`
+          )
+          
+          if (!confirmed) return
+          
+          const result = await subscriptionService.changeTier(plan.tier)
+          toast.success(result.message || '플랜이 변경되었습니다!')
+          fetchData()
+        }
+
       } catch (error) {
         toast.error(error.response?.data?.error || '플랜 변경에 실패했습니다.')
       }

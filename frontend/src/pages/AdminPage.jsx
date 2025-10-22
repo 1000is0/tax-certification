@@ -14,8 +14,6 @@ export default function AdminPage() {
   const [isGranting, setIsGranting] = useState(false)
   const [users, setUsers] = useState([])
   const [loadingUsers, setLoadingUsers] = useState(false)
-  const [testingRenew, setTestingRenew] = useState(false)
-  const [testUserId, setTestUserId] = useState('')
 
   useEffect(() => {
     fetchStats()
@@ -73,24 +71,6 @@ export default function AdminPage() {
     }
   }
 
-  const handleTestRenew = async () => {
-    if (!testUserId) {
-      toast.error('사용자를 선택해주세요.')
-      return
-    }
-
-    try {
-      setTestingRenew(true)
-      const res = await adminService.testRenewSubscription(testUserId)
-      toast.success(res.message || '구독 갱신 테스트가 완료되었습니다!')
-      console.log('테스트 결과:', res)
-    } catch (err) {
-      toast.error(err.response?.data?.error || '구독 갱신 테스트에 실패했습니다.')
-    } finally {
-      setTestingRenew(false)
-    }
-  }
-
   return (
     <Box>
       {/* 통계 섹션 */}
@@ -110,61 +90,6 @@ export default function AdminPage() {
             ))}
           </Grid>
         )}
-      </Paper>
-
-      {/* 구독 갱신 테스트 섹션 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom>구독 갱신 테스트</Typography>
-        <Divider sx={{ mb: 3 }} />
-        
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Autocomplete
-              options={users}
-              getOptionLabel={(option) => `${option.email} (${option.name})`}
-              filterOptions={(options, state) => {
-                const inputValue = state.inputValue.toLowerCase()
-                return options.filter(option => 
-                  option.email.toLowerCase().includes(inputValue) ||
-                  option.name.toLowerCase().includes(inputValue)
-                )
-              }}
-              loading={loadingUsers}
-              value={users.find(u => u.id === testUserId) || null}
-              onChange={(event, newValue) => {
-                setTestUserId(newValue?.id || '')
-              }}
-              noOptionsText="검색 결과가 없습니다."
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="테스트할 사용자 선택"
-                  placeholder="구독이 있는 사용자를 선택하세요"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {loadingUsers ? <CircularProgress color="inherit" size={20} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleTestRenew}
-              disabled={testingRenew || !testUserId}
-              fullWidth
-            >
-              {testingRenew ? <CircularProgress size={24} /> : '구독 갱신 테스트 실행'}
-            </Button>
-          </Grid>
-        </Grid>
       </Paper>
 
       {/* 크레딧 지급 섹션 */}

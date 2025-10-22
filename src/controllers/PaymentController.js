@@ -93,6 +93,131 @@ class PaymentController {
   }
 
   /**
+   * 결제 준비 (플랜 업그레이드 - 차액 결제)
+   */
+  static async prepareTierUpgradePayment(req, res) {
+    try {
+      const userId = req.user.userId;
+      const { newTier } = req.body;
+
+      if (!newTier) {
+        return res.status(400).json({
+          error: '업그레이드할 티어를 선택해주세요.',
+          code: 'MISSING_TIER'
+        });
+      }
+
+      // 현재 구독 조회
+      const subscription = await Subscription.findByUserId(userId);
+      if (!subscription || subscription.status !== 'active') {
+        return res.status(404).json({
+          error: '활성화된 구독을 찾을 수 없습니다.',
+          code: 'SUBSCRIPTION_NOT_FOUND'
+        });
+      }
+
+      const oldTierConfig = Subscription.TIERS[subscription.tier];
+      const newTierConfig = Subscription.TIERS[newTier];
+
+      if (!newTierConfig) {
+        return res.status(400).json({
+          error: '유효하지 않은 구독 티어입니다.',
+          code: 'INVALID_TIER'
+        });
+      }
+
+      // 업그레이드 여부 확인
+      const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
+      if (!isUpgrade) {
+        return res.status(400).json({
+          error: '업그레이드만 결제가 필요합니다. 다운그레이드는 플랜 변경 API를 이용하세요.',
+          code: 'NOT_UPGRADE'
+        });
+      }
+
+      // 일할계산
+      const now = new Date();
+      const cycleEnd = new Date(subscription.billingCycleEnd);
+      const cycleStart = new Date(subscription.billingCycleStart);
+      const totalDays = Math.ceil((cycleEnd - cycleStart) / (1000 * 60 * 60 * 24));
+      const remainingDays = Math.ceil((cycleEnd - now) / (1000 * 60 * 60 * 24));
+      const remainingRatio = remainingDays / totalDays;
+
+      const oldPriceProrated = (oldTierConfig.price || 0) * remainingRatio;
+      const newPriceProrated = newTierConfig.price * remainingRatio;
+      const additionalCharge = Math.ceil(newPriceProrated - oldPriceProrated);
+
+      // 주문 ID 생성
+      const orderId = `UPGRADE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const orderName = `${oldTierConfig.name} → ${newTierConfig.name} 플랜 업그레이드`;
+
+      // 결제 정보 저장
+      const payment = await Payment.create({
+        userId,
+        orderId,
+        orderName,
+        amount: additionalCharge,
+        paymentType: 'tier_upgrade',
+        relatedId: subscription.id,
+        metadata: { oldTier: subscription.tier, newTier, remainingDays, totalDays }
+      });
+
+      // 나이스페이 결제 준비 (카드만 허용)
+      const returnUrl = `${process.env.BACKEND_URL || 'https://tax-certification.vercel.app'}/api/payments/callback`;
+      const nicepayResult = await NicepayService.preparePayment({
+        orderId,
+        amount: additionalCharge,
+        goodsName: orderName,
+        returnUrl,
+        mallUserId: userId,
+        directPayMethod: 'CARD'
+      });
+
+      if (!nicepayResult.success) {
+        await payment.markAsFailed({
+          failCode: 'PREPARE_FAILED',
+          failMessage: nicepayResult.error
+        });
+
+        return res.status(500).json({
+          error: nicepayResult.error,
+          code: 'PAYMENT_PREPARE_FAILED'
+        });
+      }
+
+      logger.info('플랜 업그레이드 결제 준비 완료', { 
+        orderId, 
+        userId, 
+        oldTier: subscription.tier, 
+        newTier, 
+        additionalCharge 
+      });
+
+      res.json({
+        success: true,
+        orderId,
+        clientToken: nicepayResult.clientToken,
+        clientId: process.env.NICEPAY_CLIENT_ID,
+        returnUrl,
+        amount: additionalCharge,
+        orderName,
+        metadata: {
+          oldTier: oldTierConfig.name,
+          newTier: newTierConfig.name,
+          remainingDays,
+          additionalCharge
+        }
+      });
+    } catch (error) {
+      logError(error, { operation: 'PaymentController.prepareTierUpgradePayment' });
+      res.status(500).json({
+        error: '결제 준비 중 오류가 발생했습니다.',
+        code: 'PAYMENT_PREPARE_ERROR'
+      });
+    }
+  }
+
+  /**
    * 결제 준비 (구독 플랜)
    */
   static async prepareSubscriptionPayment(req, res) {
@@ -337,7 +462,7 @@ class PaymentController {
         });
 
       } else if (payment.paymentType === 'subscription') {
-        // 구독 생성
+        // 구독 생성 (Subscription.create 내부에서 크레딧 지급)
         const tier = payment.relatedId;
         const subscription = await Subscription.create({
           userId,
@@ -345,18 +470,7 @@ class PaymentController {
           billingKey: nicepayResult.billingKey
         });
 
-        // 구독 시작 시 첫 크레딧 지급
         const tierConfig = require('../models/Subscription').TIERS[tier];
-        if (tierConfig && tierConfig.monthlyCredits) {
-          await CreditTransaction.create({
-            userId,
-            amount: tierConfig.monthlyCredits,
-            type: 'subscription_grant',
-            description: `${tierConfig.name} 플랜 구독 시작 (${tierConfig.monthlyCredits} 크레딧)`,
-            relatedId: subscription.id,
-            expiresAt: subscription.billingCycleEnd // 구독 주기 종료일에 만료
-          });
-        }
 
         logger.info('구독 생성 및 크레딧 지급 완료', { orderId, userId, tier, credits: tierConfig?.monthlyCredits });
 
@@ -365,6 +479,38 @@ class PaymentController {
           message: `구독이 시작되었습니다. ${tierConfig.monthlyCredits} 크레딧이 지급되었습니다.`,
           payment: payment.toJSON(),
           subscription: subscription.toJSON()
+        });
+
+      } else if (payment.paymentType === 'tier_upgrade') {
+        // 플랜 업그레이드 - changeTier 호출
+        const { newTier } = payment.metadata;
+        const subscription = await Subscription.findById(payment.relatedId);
+
+        if (!subscription) {
+          return res.status(404).json({
+            error: '구독을 찾을 수 없습니다.',
+            code: 'SUBSCRIPTION_NOT_FOUND'
+          });
+        }
+
+        // 업그레이드 처리 (결제 정보 전달)
+        const result = await subscription.changeTier(newTier, payment);
+
+        logger.info('플랜 업그레이드 완료', { 
+          orderId, 
+          userId, 
+          oldTier: payment.metadata.oldTier, 
+          newTier,
+          additionalCharge: payment.amount,
+          proratedCredits: result.proratedCredits
+        });
+
+        res.json({
+          success: true,
+          message: `플랜이 업그레이드되었습니다. ${result.proratedCredits} 크레딧이 지급되었습니다.`,
+          payment: payment.toJSON(),
+          subscription: subscription.toJSON(),
+          ...result
         });
       }
     } catch (error) {
