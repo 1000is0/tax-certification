@@ -79,6 +79,7 @@ class PaymentController {
         orderId,
         clientToken: nicepayResult.clientToken,
         clientId: process.env.NICEPAY_CLIENT_ID, // 프론트엔드에서 SDK 호출 시 필요
+        returnUrl, // 프론트엔드에서 SDK 호출 시 필요
         amount: price,
         orderName
       });
@@ -178,6 +179,7 @@ class PaymentController {
         orderId,
         clientToken: nicepayResult.clientToken,
         clientId: process.env.NICEPAY_CLIENT_ID, // 프론트엔드에서 SDK 호출 시 필요
+        returnUrl, // 프론트엔드에서 SDK 호출 시 필요
         amount: tierConfig.price,
         orderName
       });

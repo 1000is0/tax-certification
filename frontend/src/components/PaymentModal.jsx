@@ -42,7 +42,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         })
       }
 
-      const { orderId, clientToken, clientId } = prepareResult
+      const { orderId, clientToken, clientId, returnUrl } = prepareResult
 
       // 나이스페이 SDK가 로드되었는지 확인
       if (typeof AUTHNICE === 'undefined') {
@@ -56,7 +56,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         orderId,
         amount,
         goodsName: orderName,
-        // returnUrl은 백엔드 preparePayment에서 설정되므로 여기서는 생략
+        returnUrl, // 백엔드에서 전달받은 returnUrl 사용
         fnError: (result) => {
           console.error('결제 오류:', result)
           setError(result.errorMsg || '결제 중 오류가 발생했습니다.')
