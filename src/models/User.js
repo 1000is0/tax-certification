@@ -281,6 +281,7 @@ class User {
       id: this.id,
       email: this.email,
       name: this.name,
+      phone: this.phone,
       role: this.role,
       isActive: this.isActive,
       lastLogin: this.lastLogin,
