@@ -25,6 +25,21 @@ class Subscription {
    * 구독 티어 설정
    */
   static TIERS = {
+    test_hourly: {
+      name: '테스트 (1시간)',
+      price: 100,
+      monthlyCredits: 10,
+      billingCycle: 'hourly',
+      popular: false,
+      description: '1시간마다 갱신되는 테스트 플랜',
+      features: [
+        '1시간마다 10 크레딧 지급',
+        '자동 갱신 테스트용',
+        '관리자 전용'
+      ],
+      limitations: [],
+      isTest: true
+    },
     free: {
       name: '무료',
       price: 0,
@@ -181,9 +196,11 @@ class Subscription {
       const start = startDate ? new Date(startDate) : new Date();
       const end = new Date(start);
       
-      // 연간 구독이면 1년, 월간 구독이면 1개월
+      // 구독 주기에 따라 종료일 설정
       if (tierConfig.billingCycle === 'yearly') {
         end.setFullYear(end.getFullYear() + 1);
+      } else if (tierConfig.billingCycle === 'hourly') {
+        end.setHours(end.getHours() + 1);
       } else {
         end.setMonth(end.getMonth() + 1);
       }
@@ -490,9 +507,11 @@ class Subscription {
       const start = new Date();
       const end = new Date(start);
       
-      // 연간 구독이면 1년, 월간 구독이면 1개월
+      // 구독 주기에 따라 종료일 설정
       if (tierConfig.billingCycle === 'yearly') {
         end.setFullYear(end.getFullYear() + 1);
+      } else if (tierConfig.billingCycle === 'hourly') {
+        end.setHours(end.getHours() + 1);
       } else {
         end.setMonth(end.getMonth() + 1);
       }

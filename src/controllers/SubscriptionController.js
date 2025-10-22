@@ -308,6 +308,110 @@ class SubscriptionController {
   }
   
   /**
+   * 구독 갱신 테스트 (관리자 전용)
+   * 특정 사용자의 구독을 즉시 갱신 테스트
+   */
+  static async testRenewSubscription(req, res) {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({
+          error: 'userId가 필요합니다.',
+          code: 'MISSING_USER_ID'
+        });
+      }
+
+      const subscription = await Subscription.findByUserId(userId);
+      
+      if (!subscription) {
+        return res.status(404).json({
+          error: '구독을 찾을 수 없습니다.',
+          code: 'SUBSCRIPTION_NOT_FOUND'
+        });
+      }
+
+      if (subscription.status !== 'active') {
+        return res.status(400).json({
+          error: 'active 상태의 구독만 갱신할 수 있습니다.',
+          code: 'SUBSCRIPTION_NOT_ACTIVE'
+        });
+      }
+
+      // 빌링키로 결제
+      if (!subscription.billingKey) {
+        return res.status(400).json({
+          error: '빌링키가 없습니다.',
+          code: 'NO_BILLING_KEY'
+        });
+      }
+
+      const orderId = `TEST_SUB_${subscription.id}_${Date.now()}`;
+      const tierConfig = Subscription.TIERS[subscription.tier];
+
+      const paymentResult = await NicepayService.payWithBillingKey({
+        billingKey: subscription.billingKey,
+        orderId,
+        amount: tierConfig.price,
+        goodsName: `[테스트] ${tierConfig.name} 플랜 월간 구독`,
+        mallUserId: subscription.userId
+      });
+
+      if (!paymentResult.success) {
+        return res.status(400).json({
+          error: paymentResult.error,
+          code: 'PAYMENT_FAILED'
+        });
+      }
+
+      // 결제 기록 생성
+      await Payment.create({
+        userId: subscription.userId,
+        orderId,
+        orderName: `[테스트] ${tierConfig.name} 플랜 월간 구독`,
+        amount: tierConfig.price,
+        paymentType: 'subscription_renewal',
+        relatedId: subscription.id,
+        tid: paymentResult.tid,
+        payMethod: 'card',
+        status: 'paid'
+      });
+
+      // 구독 갱신
+      await subscription.renew();
+
+      // 크레딧 지급
+      await CreditTransaction.create({
+        userId: subscription.userId,
+        amount: tierConfig.monthlyCredits,
+        type: 'subscription_grant',
+        description: `[테스트] ${tierConfig.name} 플랜 월간 크레딧`,
+        relatedId: subscription.id,
+        expiresAt: subscription.billingCycleEnd
+      });
+
+      logger.info('구독 갱신 테스트 성공', { subscriptionId: subscription.id, userId });
+
+      res.json({
+        success: true,
+        message: '구독 갱신 테스트가 완료되었습니다.',
+        subscription: subscription.toJSON(),
+        payment: {
+          orderId,
+          tid: paymentResult.tid,
+          amount: tierConfig.price
+        }
+      });
+    } catch (error) {
+      logError(error, { operation: 'SubscriptionController.testRenewSubscription' });
+      res.status(500).json({
+        error: error.message || '구독 갱신 테스트 중 오류가 발생했습니다.',
+        code: 'TEST_RENEW_ERROR'
+      });
+    }
+  }
+
+  /**
    * 만료된 구독 처리 (Cron Job용 - Vercel Cron 전용)
    * 결제 실패 등으로 만료된 구독을 정리
    */

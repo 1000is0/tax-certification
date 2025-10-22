@@ -393,6 +393,16 @@ export const adminService = {
     } catch (error) {
       throw error
     }
+  },
+
+  // 구독 갱신 테스트
+  async testRenewSubscription(userId) {
+    try {
+      const response = await api.post('/admin/subscriptions/test-renew', { userId })
+      return response.data
+    } catch (error) {
+      throw error
+    }
   }
 }
 

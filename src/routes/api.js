@@ -96,6 +96,7 @@ router.get('/admin/credentials', authenticateToken, requireAdmin, CredentialCont
 router.get('/admin/credentials/stats', authenticateToken, requireAdmin, CredentialController.getCredentialStats);
 router.get('/admin/users', authenticateToken, requireAdmin, UserController.getAllUsers);
 router.post('/admin/credits/grant', authenticateToken, requireAdmin, CreditController.adminGrant);
+router.post('/admin/subscriptions/test-renew', authenticateToken, requireAdmin, SubscriptionController.testRenewSubscription);
 
 // Make 웹훅용 라우트 (API 키 인증)
 router.post('/webhook/decrypt-credentials', authenticateAPIKey, clientIdValidation, WebhookController.decryptCredentials);
