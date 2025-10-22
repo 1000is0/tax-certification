@@ -57,6 +57,22 @@ class Subscription {
       ],
       limitations: []
     },
+    starter_yearly: {
+      name: '스타터 (연간)',
+      price: 313200, // 29000 × 12 × 0.9 (10% 할인)
+      monthlyCredits: 100,
+      billingCycle: 'yearly',
+      popular: false,
+      description: '소규모 비즈니스를 위한 시작 플랜 (연간 결제 시 10% 할인)',
+      features: [
+        '월 100 크레딧',
+        '모든 기본 기능',
+        '이메일 지원',
+        '월간 리포트',
+        '연간 10% 할인'
+      ],
+      limitations: []
+    },
     professional: {
       name: '프로페셔널',
       price: 79000,
@@ -71,6 +87,24 @@ class Subscription {
         '전화 지원',
         '주간 리포트',
         'API 접근'
+      ],
+      limitations: []
+    },
+    professional_yearly: {
+      name: '프로페셔널 (연간)',
+      price: 852800, // 79000 × 12 × 0.9 (10% 할인)
+      monthlyCredits: 300,
+      billingCycle: 'yearly',
+      popular: true,
+      description: '전문가와 성장하는 비즈니스를 위한 플랜 (연간 결제 시 10% 할인)',
+      features: [
+        '월 300 크레딧',
+        '모든 고급 기능',
+        '우선 이메일 지원',
+        '전화 지원',
+        '주간 리포트',
+        'API 접근',
+        '연간 10% 할인'
       ],
       limitations: []
     },
@@ -89,6 +123,25 @@ class Subscription {
         '일간 리포트',
         '고급 API 접근',
         '커스텀 통합'
+      ],
+      limitations: []
+    },
+    business_yearly: {
+      name: '비즈니스 (연간)',
+      price: 2148800, // 199000 × 12 × 0.9 (10% 할인)
+      monthlyCredits: 1000,
+      billingCycle: 'yearly',
+      popular: false,
+      description: '대규모 비즈니스를 위한 프리미엄 플랜 (연간 결제 시 10% 할인)',
+      features: [
+        '월 1,000 크레딧',
+        '모든 프리미엄 기능',
+        '전담 계정 매니저',
+        '24/7 우선 지원',
+        '일간 리포트',
+        '고급 API 접근',
+        '커스텀 통합',
+        '연간 10% 할인'
       ],
       limitations: []
     },
@@ -127,7 +180,13 @@ class Subscription {
 
       const start = startDate ? new Date(startDate) : new Date();
       const end = new Date(start);
-      end.setMonth(end.getMonth() + 1);
+      
+      // 연간 구독이면 1년, 월간 구독이면 1개월
+      if (tierConfig.billingCycle === 'yearly') {
+        end.setFullYear(end.getFullYear() + 1);
+      } else {
+        end.setMonth(end.getMonth() + 1);
+      }
 
       const nextBilling = new Date(end);
 
@@ -367,9 +426,16 @@ class Subscription {
    */
   async renew() {
     try {
+      const tierConfig = Subscription.TIERS[this.tier];
       const start = new Date();
       const end = new Date(start);
-      end.setMonth(end.getMonth() + 1);
+      
+      // 연간 구독이면 1년, 월간 구독이면 1개월
+      if (tierConfig.billingCycle === 'yearly') {
+        end.setFullYear(end.getFullYear() + 1);
+      } else {
+        end.setMonth(end.getMonth() + 1);
+      }
 
       const nextBilling = new Date(end);
 
@@ -382,11 +448,10 @@ class Subscription {
 
       // 크레딧 지급
       if (this.monthlyCreditQuota > 0) {
-        const tierConfig = Subscription.TIERS[this.tier];
         await CreditTransaction.grantSubscription(
           this.userId,
           this.monthlyCreditQuota,
-          `${tierConfig.name} 플랜 월 크레딧 지급`,
+          `${tierConfig.name} 플랜 크레딧 지급`,
           end.toISOString()
         );
       }
