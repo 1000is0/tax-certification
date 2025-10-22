@@ -58,6 +58,7 @@ class PaymentController {
         directPayMethod: 'CARD' // 카드 결제만 허용
       });
       console.log('[DEBUG] NicepayService.preparePayment 완료', { success: nicepayResult.success });
+      console.log('[DEBUG] nicepayResult 전체:', JSON.stringify(nicepayResult));
 
       if (!nicepayResult.success) {
         await payment.markAsFailed({
