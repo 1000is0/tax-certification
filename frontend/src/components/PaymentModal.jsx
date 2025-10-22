@@ -56,7 +56,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         orderId,
         amount,
         goodsName: orderName,
-        returnUrl: `${window.location.origin}/payment/callback`,
+        // returnUrl은 백엔드 preparePayment에서 설정되므로 여기서는 생략
         fnError: (result) => {
           console.error('결제 오류:', result)
           setError(result.errorMsg || '결제 중 오류가 발생했습니다.')
