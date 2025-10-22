@@ -316,18 +316,19 @@ class Subscription {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // suspended 상태인 구독 중 billing_cycle_end가 지난 것들
-      const result = await query('subscriptions', 'select', {
-        where: { status: 'suspended' }
-      });
+      // suspended 또는 cancelled 상태인 구독을 모두 가져옴
+      const result = await query('subscriptions', 'select', {});
 
       if (result.error) {
         throw result.error;
       }
 
-      // billing_cycle_end가 오늘보다 이전인 구독 필터링
+      // billing_cycle_end가 오늘보다 이전이고, suspended 또는 cancelled 상태인 구독 필터링
       const subscriptions = (result.data || [])
-        .filter(item => item.billing_cycle_end < today)
+        .filter(item => 
+          item.billing_cycle_end < today && 
+          (item.status === 'suspended' || item.status === 'cancelled')
+        )
         .map(item => new Subscription(item));
 
       return subscriptions;
@@ -362,20 +363,49 @@ class Subscription {
   }
 
   /**
-   * 티어 변경
+   * 티어 변경 (일할계산 및 크레딧 지급)
    */
   async changeTier(newTier) {
     try {
-      const tierConfig = Subscription.TIERS[newTier];
-      if (!tierConfig) {
+      const oldTierConfig = Subscription.TIERS[this.tier];
+      const newTierConfig = Subscription.TIERS[newTier];
+      
+      if (!newTierConfig) {
         throw new Error('유효하지 않은 티어입니다.');
       }
+
+      // 일할계산: 남은 기간 계산
+      const now = new Date();
+      const cycleEnd = new Date(this.billingCycleEnd);
+      const cycleStart = new Date(this.billingCycleStart);
+      
+      // 전체 기간 (일)
+      const totalDays = Math.ceil((cycleEnd - cycleStart) / (1000 * 60 * 60 * 24));
+      // 남은 기간 (일)
+      const remainingDays = Math.ceil((cycleEnd - now) / (1000 * 60 * 60 * 24));
+      
+      // 남은 기간 비율
+      const remainingRatio = remainingDays / totalDays;
+
+      // 일할계산된 크레딧 (남은 기간에 비례)
+      const proratedCredits = Math.floor(newTierConfig.monthlyCredits * remainingRatio);
+
+      logger.info('구독 티어 변경 - 일할계산', {
+        userId: this.userId,
+        oldTier: this.tier,
+        newTier,
+        totalDays,
+        remainingDays,
+        remainingRatio,
+        fullCredits: newTierConfig.monthlyCredits,
+        proratedCredits
+      });
 
       // 티어 업데이트
       await this.update({
         tier: newTier,
-        monthly_credit_quota: tierConfig.monthlyCredits,
-        price: tierConfig.price
+        monthly_credit_quota: newTierConfig.monthlyCredits,
+        price: newTierConfig.price
       });
 
       // users 테이블 업데이트
@@ -384,15 +414,16 @@ class Subscription {
         data: { subscription_tier: newTier }
       });
 
-      // 즉시 새 티어의 크레딧 지급 (프로레이션은 나중에 구현)
-      if (tierConfig.monthlyCredits > 0) {
-        const endDate = new Date(this.billingCycleEnd);
-        await CreditTransaction.grantSubscription(
-          this.userId,
-          tierConfig.monthlyCredits,
-          `${tierConfig.name} 플랜으로 업그레이드 - 크레딧 지급`,
-          endDate.toISOString()
-        );
+      // 일할계산된 크레딧 지급
+      if (proratedCredits > 0) {
+        await CreditTransaction.create({
+          userId: this.userId,
+          amount: proratedCredits,
+          type: 'subscription_grant',
+          description: `${newTierConfig.name} 플랜 업그레이드 (일할계산: ${remainingDays}일/${totalDays}일)`,
+          relatedId: this.id,
+          expiresAt: cycleEnd.toISOString()
+        });
       }
 
       return this;

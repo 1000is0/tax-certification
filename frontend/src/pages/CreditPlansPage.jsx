@@ -17,12 +17,14 @@ import {
   CircularProgress,
   Tabs,
   Tab,
-  Paper
+  Paper,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import StarIcon from '@mui/icons-material/Star'
 import ContactMailIcon from '@mui/icons-material/ContactMail'
-import { creditService } from '../services/api'
+import { creditService, subscriptionService } from '../services/api'
 import PaymentModal from '../components/PaymentModal'
 import toast from 'react-hot-toast'
 
@@ -44,6 +46,7 @@ export default function CreditPlansPage() {
   const [oneTimeCredits, setOneTimeCredits] = useState([])
   const [currentSubscription, setCurrentSubscription] = useState(null)
   const [tabValue, setTabValue] = useState(0)
+  const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' or 'yearly'
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [paymentData, setPaymentData] = useState(null)
 
@@ -73,7 +76,7 @@ export default function CreditPlansPage() {
     setTabValue(newValue)
   }
 
-  const handleSubscribe = (plan) => {
+  const handleSubscribe = async (plan) => {
     if (plan.isCustom) {
       // 엔터프라이즈는 문의하기
       toast.success('영업팀에 문의해주세요: contact@example.com')
@@ -85,7 +88,25 @@ export default function CreditPlansPage() {
       return
     }
 
-    // 결제 모달 열기
+    // 이미 구독 중인 경우 플랜 변경
+    if (currentSubscription && currentSubscription.status === 'active') {
+      try {
+        const confirmed = window.confirm(
+          `${plan.name} 플랜으로 변경하시겠습니까?\n\n남은 기간에 비례하여 크레딧이 지급됩니다.`
+        )
+        
+        if (!confirmed) return
+        
+        const result = await subscriptionService.changeTier(plan.tier)
+        toast.success(result.message || '플랜이 변경되었습니다!')
+        fetchData() // 데이터 새로고침
+      } catch (error) {
+        toast.error(error.response?.data?.error || '플랜 변경에 실패했습니다.')
+      }
+      return
+    }
+
+    // 새로 구독하는 경우 결제 모달 열기
     setPaymentData({
       type: 'subscription',
       tier: plan.tier,
@@ -172,8 +193,48 @@ export default function CreditPlansPage() {
 
       {/* 구독 플랜 탭 */}
       <TabPanel value={tabValue} index={0}>
+        {/* 월간/연간 토글 */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+          <ToggleButtonGroup
+            value={billingCycle}
+            exclusive
+            onChange={(e, newValue) => newValue && setBillingCycle(newValue)}
+            color="primary"
+            size="large"
+          >
+            <ToggleButton value="monthly" sx={{ px: 4, py: 1.5 }}>
+              <Typography variant="body1" fontWeight="medium">
+                월간 결제
+              </Typography>
+            </ToggleButton>
+            <ToggleButton value="yearly" sx={{ px: 4, py: 1.5 }}>
+              <Box>
+                <Typography variant="body1" fontWeight="medium">
+                  연간 결제
+                </Typography>
+                <Chip 
+                  label="10% 할인" 
+                  size="small" 
+                  color="success" 
+                  sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
+                />
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         <Grid container spacing={3}>
-          {subscriptionPlans.map((plan) => {
+          {subscriptionPlans
+            .filter(plan => {
+              // billingCycle에 따라 필터링
+              if (plan.tier === 'free' || plan.tier === 'enterprise') return true
+              if (billingCycle === 'yearly') {
+                return plan.tier.endsWith('_yearly')
+              } else {
+                return !plan.tier.endsWith('_yearly')
+              }
+            })
+            .map((plan) => {
             const isCurrentPlan = currentSubscription?.tier === plan.tier
             
             return (

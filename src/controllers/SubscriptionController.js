@@ -91,6 +91,63 @@ class SubscriptionController {
   }
 
   /**
+   * 구독 플랜 변경 (업그레이드/다운그레이드)
+   */
+  static async changeTier(req, res) {
+    try {
+      const userId = req.user.userId;
+      const { newTier } = req.body;
+      
+      const subscription = await Subscription.findByUserId(userId);
+      
+      if (!subscription) {
+        return res.status(404).json({
+          error: '활성화된 구독을 찾을 수 없습니다.',
+          code: 'SUBSCRIPTION_NOT_FOUND'
+        });
+      }
+      
+      if (subscription.status !== 'active') {
+        return res.status(400).json({
+          error: '변경할 수 있는 구독이 아닙니다.',
+          code: 'SUBSCRIPTION_NOT_ACTIVE'
+        });
+      }
+
+      if (subscription.tier === newTier) {
+        return res.status(400).json({
+          error: '현재 플랜과 동일합니다.',
+          code: 'SAME_TIER'
+        });
+      }
+      
+      // 티어 변경 (일할계산 포함)
+      await subscription.changeTier(newTier);
+      
+      const newTierConfig = Subscription.TIERS[newTier];
+      
+      logger.info('구독 플랜 변경 완료', { 
+        userId, 
+        subscriptionId: subscription.id, 
+        oldTier: subscription.tier,
+        newTier 
+      });
+      
+      res.json({
+        success: true,
+        message: `${newTierConfig.name} 플랜으로 변경되었습니다.`,
+        subscription: subscription.toJSON()
+      });
+    } catch (error) {
+      logError(error, { operation: 'SubscriptionController.changeTier' });
+      res.status(500).json({
+        error: '플랜 변경 중 오류가 발생했습니다.',
+        code: 'SUBSCRIPTION_CHANGE_ERROR'
+      });
+    }
+  }
+
+  /**
    * 구독 갱신 (Cron Job용 - Vercel Cron 전용)
    * 만료된 구독을 자동 갱신하고 결제 처리
    */

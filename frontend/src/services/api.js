@@ -331,6 +331,16 @@ export const subscriptionService = {
     } catch (error) {
       throw error
     }
+  },
+
+  // 구독 플랜 변경
+  async changeTier(newTier) {
+    try {
+      const response = await api.post('/subscriptions/change-tier', { newTier })
+      return response.data
+    } catch (error) {
+      throw error
+    }
   }
 }
 
