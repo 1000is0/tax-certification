@@ -62,8 +62,8 @@ export default function CreditHistoryPage() {
 
   const getTypeLabel = (type) => {
     const typeMap = {
-      'subscription_grant': '구독 크레딧',
-      'purchase': '크레딧 구매',
+      'subscription_grant': '플랜 지급',
+      'purchase': '추가 구매',
       'usage': '사용',
       'expiration': '만료',
       'refund': '환불',
