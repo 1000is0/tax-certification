@@ -438,8 +438,35 @@ class TaxCredential {
   // 인증서 통계 조회
   static async getStats() {
     try {
-      const result = await rpc('get_credentials_stats');
-      return result;
+      // 전체 인증서 수
+      const totalResult = await query('tax_credentials', 'select', {
+        columns: 'id'
+      });
+      
+      // 활성 인증서 수
+      const activeResult = await query('tax_credentials', 'select', {
+        where: { is_active: true },
+        columns: 'id'
+      });
+      
+      // 만료 예정 인증서 수 (30일 이내)
+      const thirtyDaysLater = new Date();
+      thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+      
+      const expiringResult = await query('tax_credentials', 'select', {
+        where: {
+          is_active: true,
+          expires_at: { $lte: thirtyDaysLater.toISOString() }
+        },
+        columns: 'id'
+      });
+
+      return {
+        total: totalResult.data?.length || 0,
+        active: activeResult.data?.length || 0,
+        expiringSoon: expiringResult.data?.length || 0,
+        inactive: (totalResult.data?.length || 0) - (activeResult.data?.length || 0)
+      };
     } catch (error) {
       logError(error, { operation: 'TaxCredential.getStats' });
       throw error;
