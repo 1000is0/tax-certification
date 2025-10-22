@@ -26,28 +26,92 @@ class Subscription {
    */
   static TIERS = {
     free: {
-      name: 'Free',
+      name: '무료',
       price: 0,
-      monthlyCredits: 0,
-      features: ['기본 기능']
+      monthlyCredits: 10,
+      billingCycle: 'monthly',
+      popular: false,
+      description: '개인 사용자를 위한 무료 플랜',
+      features: [
+        '월 10 크레딧',
+        '기본 기능',
+        '커뮤니티 지원'
+      ],
+      limitations: [
+        '제한된 API 호출',
+        '표준 처리 속도'
+      ]
     },
-    basic: {
-      name: 'Basic',
+    starter: {
+      name: '스타터',
       price: 29000,
       monthlyCredits: 100,
-      features: ['월 100 크레딧', '기본 지원']
+      billingCycle: 'monthly',
+      popular: false,
+      description: '소규모 비즈니스를 위한 시작 플랜',
+      features: [
+        '월 100 크레딧',
+        '모든 기본 기능',
+        '이메일 지원',
+        '월간 리포트'
+      ],
+      limitations: []
     },
-    pro: {
-      name: 'Pro',
-      price: 99000,
-      monthlyCredits: 500,
-      features: ['월 500 크레딧', '우선 지원', 'API 접근']
+    professional: {
+      name: '프로페셔널',
+      price: 79000,
+      monthlyCredits: 300,
+      billingCycle: 'monthly',
+      popular: true,
+      description: '전문가와 성장하는 비즈니스를 위한 플랜',
+      features: [
+        '월 300 크레딧',
+        '모든 고급 기능',
+        '우선 이메일 지원',
+        '전화 지원',
+        '주간 리포트',
+        'API 접근'
+      ],
+      limitations: []
+    },
+    business: {
+      name: '비즈니스',
+      price: 199000,
+      monthlyCredits: 1000,
+      billingCycle: 'monthly',
+      popular: false,
+      description: '대규모 비즈니스를 위한 프리미엄 플랜',
+      features: [
+        '월 1,000 크레딧',
+        '모든 프리미엄 기능',
+        '전담 계정 매니저',
+        '24/7 우선 지원',
+        '일간 리포트',
+        '고급 API 접근',
+        '커스텀 통합'
+      ],
+      limitations: []
     },
     enterprise: {
-      name: 'Enterprise',
-      price: 299000,
-      monthlyCredits: 2000,
-      features: ['월 2000 크레딧', '전담 지원', 'API 무제한', '커스텀 기능']
+      name: '엔터프라이즈',
+      price: null,
+      monthlyCredits: null,
+      billingCycle: 'custom',
+      popular: false,
+      description: '대기업을 위한 맞춤형 솔루션',
+      features: [
+        '무제한 크레딧',
+        '맞춤형 솔루션',
+        '전담 기술 지원팀',
+        '24/7 프리미엄 지원',
+        '실시간 리포트',
+        '전용 서버 옵션',
+        '온프레미스 배포 가능',
+        'SLA 보장',
+        '맞춤형 계약'
+      ],
+      limitations: [],
+      isCustom: true
     }
   };
 

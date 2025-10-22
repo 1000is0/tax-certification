@@ -124,12 +124,50 @@ class CreditController {
    */
   static async getPlans(req, res) {
     try {
-      const plans = Object.entries(Subscription.TIERS).map(([key, value]) => ({
+      // 구독 플랜
+      const subscriptionPlans = Object.entries(Subscription.TIERS).map(([key, value]) => ({
         id: key,
+        tier: key,
         ...value
       }));
 
-      res.json({ plans });
+      // 일회성 크레딧 패키지
+      const oneTimeCredits = [
+        { 
+          id: 'credit-50', 
+          credits: 50, 
+          price: 15000, 
+          bonus: 0,
+          description: '소량 크레딧 구매'
+        },
+        { 
+          id: 'credit-100', 
+          credits: 100, 
+          price: 25000, 
+          bonus: 10,
+          description: '10% 보너스 크레딧'
+        },
+        { 
+          id: 'credit-300', 
+          credits: 300, 
+          price: 70000, 
+          bonus: 30,
+          description: '10% 보너스 크레딧',
+          popular: true
+        },
+        { 
+          id: 'credit-500', 
+          credits: 500, 
+          price: 110000, 
+          bonus: 50,
+          description: '10% 보너스 크레딧'
+        }
+      ];
+
+      res.json({ 
+        subscriptionPlans, 
+        oneTimeCredits 
+      });
     } catch (error) {
       logError(error, { operation: 'CreditController.getPlans' });
       res.status(500).json({
