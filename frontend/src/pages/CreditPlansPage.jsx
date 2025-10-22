@@ -120,13 +120,13 @@ export default function CreditPlansPage() {
   }
 
   const formatPrice = (price) => {
-    if (price === null) return '문의'
+    if (price === null || price === undefined) return '문의'
     if (price === 0) return '무료'
     return `₩${price.toLocaleString()}`
   }
 
   const formatCredits = (credits) => {
-    if (credits === null) return '무제한'
+    if (credits === null || credits === undefined) return '무제한'
     return `${credits.toLocaleString()}`
   }
 
