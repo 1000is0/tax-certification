@@ -177,8 +177,7 @@ class SubscriptionController {
         });
       }
 
-      // 업그레이드 여부
-      const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
+      // 업그레이드/다운그레이드 여부 (이미 위에서 계산됨)
       const isDowngrade = newTierConfig.price < (oldTierConfig.price || 0);
 
       if (isUpgrade) {
