@@ -70,6 +70,7 @@ export default function Layout({ children }) {
               <Button color="inherit" component={Link} to="/credentials">내 인증서</Button>
               <Button color="inherit" component={Link} to="/subscriptions/manage">내 구독</Button>
               <Button color="inherit" component={Link} to="/credits/plans">크레딧 플랜</Button>
+              <Button color="inherit" component={Link} to="/account">내 계정</Button>
               {user.role === 'admin' && (
                 <Button color="inherit" component={Link} to="/admin">관리</Button>
               )}

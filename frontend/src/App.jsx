@@ -11,6 +11,7 @@ import CredentialFormPage from './pages/CredentialFormPage'
 import CreditHistoryPage from './pages/CreditHistoryPage'
 import CreditPlansPage from './pages/CreditPlansPage'
 import SubscriptionManagePage from './pages/SubscriptionManagePage'
+import MyAccountPage from './pages/MyAccountPage'
 import PaymentCallbackPage from './pages/PaymentCallbackPage'
 import AdminPage from './pages/AdminPage'
 
@@ -44,6 +45,7 @@ function App() {
                   <Route path="/credits/history" element={<CreditHistoryPage />} />
                   <Route path="/credits/plans" element={<CreditPlansPage />} />
                   <Route path="/subscriptions/manage" element={<SubscriptionManagePage />} />
+                  <Route path="/account" element={<MyAccountPage />} />
                   <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                   {user?.role === 'admin' && (
                     <Route path="/admin" element={<AdminPage />} />

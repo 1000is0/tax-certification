@@ -182,6 +182,38 @@ export const creditService = {
   }
 }
 
+export const userService = {
+  // 프로필 조회
+  async getProfile() {
+    try {
+      const response = await api.get('/users/profile')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 프로필 업데이트
+  async updateProfile(data) {
+    try {
+      const response = await api.put('/users/profile', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 비밀번호 변경
+  async changePassword(data) {
+    try {
+      const response = await api.put('/users/password', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+}
+
 export const authService = {
   // 로그인
   async login(email, password) {
