@@ -82,15 +82,19 @@ class User {
   static async findAll() {
     try {
       const result = await query('users', 'select', {
-        columns: 'id, email, name, role, credit_balance, subscription_tier, created_at',
-        order: { created_at: 'desc' }
+        columns: 'id, email, name, role, credit_balance, subscription_tier, created_at'
       });
 
       if (result.error) {
         throw result.error;
       }
 
-      return (result.data || []).map(userData => new User(userData));
+      // JavaScript에서 정렬
+      const sortedData = (result.data || []).sort((a, b) => 
+        new Date(b.created_at) - new Date(a.created_at)
+      );
+
+      return sortedData.map(userData => new User(userData));
     } catch (error) {
       logError(error, { operation: 'User.findAll' });
       throw error;
