@@ -102,6 +102,13 @@ export default function AdminPage() {
             <Autocomplete
               options={users}
               getOptionLabel={(option) => `${option.email} (${option.name}) - 잔액: ${option.creditBalance || 0} 크레딧`}
+              filterOptions={(options, state) => {
+                const inputValue = state.inputValue.toLowerCase()
+                return options.filter(option => 
+                  option.email.toLowerCase().includes(inputValue) ||
+                  option.name.toLowerCase().includes(inputValue)
+                )
+              }}
               loading={loadingUsers}
               value={users.find(u => u.id === grantForm.userId) || null}
               onChange={(event, newValue) => {
@@ -111,6 +118,7 @@ export default function AdminPage() {
                   userEmail: newValue?.email || ''
                 })
               }}
+              noOptionsText="검색 결과가 없습니다."
               renderInput={(params) => (
                 <TextField
                   {...params}
