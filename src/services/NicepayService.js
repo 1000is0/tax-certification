@@ -13,38 +13,22 @@ class NicepayService {
   }
 
   /**
-   * 서명 생성 (Authorization 헤더용)
+   * API 요청 헤더 생성 (Server Key 방식)
    */
-  generateSignature(data = '') {
-    const timestamp = Date.now().toString();
-    const message = `${this.clientId}${timestamp}${data}`;
-    const signature = crypto
-      .createHmac('sha256', this.secretKey)
-      .update(message)
-      .digest('hex');
-    
-    return {
-      timestamp,
-      signature
-    };
-  }
-
-  /**
-   * API 요청 헤더 생성
-   */
-  getHeaders(data = '') {
-    const { timestamp, signature } = this.generateSignature(data);
+  getHeaders() {
+    // Client ID와 Secret Key를 Base64로 인코딩
+    const credentials = Buffer.from(`${this.clientId}:${this.secretKey}`).toString('base64');
     
     return {
       'Content-Type': 'application/json',
-      'Authorization': `NICEPAY ${this.clientId}:${signature}:${timestamp}`
+      'Authorization': `Basic ${credentials}`
     };
   }
 
   /**
    * 결제 준비 (클라이언트 토큰 발급)
    */
-  async preparePayment({ orderId, amount, goodsName, returnUrl, mallUserId }) {
+  async preparePayment({ orderId, amount, goodsName, returnUrl, mallUserId, directPayMethod }) {
     try {
       const requestData = {
         orderId,
@@ -54,10 +38,15 @@ class NicepayService {
         mallUserId
       };
 
+      // 결제 수단 제한이 있는 경우 추가
+      if (directPayMethod) {
+        requestData.payMethod = directPayMethod;
+      }
+
       const response = await axios.post(
         `${this.apiUrl}/v1/payments/ready`,
         requestData,
-        { headers: this.getHeaders(JSON.stringify(requestData)) }
+        { headers: this.getHeaders() }
       );
 
       logger.info('나이스페이 결제 준비 성공', { orderId });
@@ -91,7 +80,7 @@ class NicepayService {
       const response = await axios.post(
         `${this.apiUrl}/v1/payments/${tid}/approve`,
         requestData,
-        { headers: this.getHeaders(JSON.stringify(requestData)) }
+        { headers: this.getHeaders() }
       );
 
       logger.info('나이스페이 결제 승인 성공', { tid });
@@ -138,7 +127,7 @@ class NicepayService {
       const response = await axios.post(
         `${this.apiUrl}/v1/payments/${tid}/cancel`,
         requestData,
-        { headers: this.getHeaders(JSON.stringify(requestData)) }
+        { headers: this.getHeaders() }
       );
 
       logger.info('나이스페이 결제 취소 성공', { tid });
@@ -204,7 +193,7 @@ class NicepayService {
       const response = await axios.post(
         `${this.apiUrl}/v1/subscribe/regist`,
         requestData,
-        { headers: this.getHeaders(JSON.stringify(requestData)) }
+        { headers: this.getHeaders() }
       );
 
       logger.info('나이스페이 빌링키 발급 성공', { orderId });
@@ -245,7 +234,7 @@ class NicepayService {
       const response = await axios.post(
         `${this.apiUrl}/v1/subscribe/payments`,
         requestData,
-        { headers: this.getHeaders(JSON.stringify(requestData)) }
+        { headers: this.getHeaders() }
       );
 
       logger.info('나이스페이 빌링키 결제 성공', { orderId, billingKey });
