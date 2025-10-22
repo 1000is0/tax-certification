@@ -12,10 +12,12 @@ class PaymentController {
    * 결제 준비 (일회성 크레딧 구매)
    */
   static async prepareCreditPayment(req, res) {
+    console.log('[DEBUG] prepareCreditPayment 시작');
     try {
       const userId = req.user.userId;
       const { creditPackId, credits, price } = req.body;
 
+      console.log('[DEBUG] 크레딧 결제 준비 시작', { userId, creditPackId, credits, price });
       logger.info('크레딧 결제 준비 시작', { userId, creditPackId, credits, price });
 
       if (!creditPackId || !credits || !price) {
