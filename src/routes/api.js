@@ -7,6 +7,7 @@ const UserController = require('../controllers/UserController');
 const PaymentController = require('../controllers/PaymentController');
 const SubscriptionController = require('../controllers/SubscriptionController');
 const WebhookController = require('../controllers/WebhookController');
+const MakeController = require('../controllers/MakeController');
 const { authenticateToken, requireAdmin, authenticateAPIKey, auditLog } = require('../middleware/auth');
 const { requireCredit } = require('../middleware/creditCheck');
 
@@ -113,6 +114,9 @@ router.post('/webhook/test', authenticateAPIKey, WebhookController.testScenario)
 
 // 나이스페이 웹훅 (인증 불필요 - 나이스페이 서버에서 직접 호출)
 // 웹훅은 카드결제만 사용하므로 불필요
+
+// Make 연동 API
+router.post('/make/execute', MakeController.executeWorkflow);
 
 // 헬스 체크
 router.get('/health', (req, res) => {

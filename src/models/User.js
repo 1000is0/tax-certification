@@ -9,6 +9,8 @@ class User {
     this.passwordHash = data.password_hash;
     this.name = data.name;
     this.phone = data.phone;
+    this.businessNumber = data.business_number;
+    this.companyName = data.company_name;
     this.role = data.role;
     this.isActive = data.is_active;
     this.lastLogin = data.last_login;
@@ -77,6 +79,32 @@ class User {
       return new User(result.data[0]);
     } catch (error) {
       logError(error, { operation: 'User.findByEmail' });
+      throw error;
+    }
+  }
+
+  // 사업자번호와 상호로 사용자 조회 (Make 연동용)
+  static async findByBusinessInfo(businessNumber, companyName) {
+    try {
+      const result = await query('users', 'select', {
+        where: { 
+          business_number: businessNumber,
+          company_name: companyName 
+        },
+        limit: 1
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (result.data.length === 0) {
+        return null;
+      }
+
+      return new User(result.data[0]);
+    } catch (error) {
+      logError(error, { operation: 'User.findByBusinessInfo' });
       throw error;
     }
   }
@@ -249,6 +277,25 @@ class User {
       return await bcrypt.compare(password, this.passwordHash);
     } catch (error) {
       logError(error, { operation: 'User.verifyPassword' });
+      throw error;
+    }
+  }
+
+  // 크레딧 잔액 업데이트
+  static async updateCreditBalance(userId, newBalance) {
+    try {
+      const result = await query('users', 'update', {
+        where: { id: userId },
+        data: { credit_balance: newBalance }
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return result.data;
+    } catch (error) {
+      logError(error, { operation: 'User.updateCreditBalance' });
       throw error;
     }
   }
