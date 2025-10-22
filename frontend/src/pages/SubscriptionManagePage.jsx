@@ -260,6 +260,18 @@ function SubscriptionManagePage() {
         </CardContent>
       </Card>
 
+      {/* 다운그레이드 예약 상태 표시 */}
+      {subscription.status === 'active' && subscription.pendingTier && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2" gutterBottom>
+            플랜 변경이 예약되었습니다
+          </Typography>
+          <Typography variant="caption">
+            현재 플랜: {subscription.tier} → 다음 결제일부터: {subscription.pendingTier}
+          </Typography>
+        </Alert>
+      )}
+
       {/* 구독 관리 액션 */}
       {subscription.status === 'active' && (
         <Card sx={{ mb: 3 }}>

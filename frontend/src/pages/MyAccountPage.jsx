@@ -160,9 +160,24 @@ export default function MyAccountPage() {
               fullWidth
               label="휴대폰 번호"
               value={editing ? editForm.phone : profile.phone}
-              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              onChange={(e) => {
+                const input = e.target.value
+                // 숫자만 추출
+                const numbers = input.replace(/\D/g, '')
+                // 11자리까지만 허용
+                const limitedNumbers = numbers.slice(0, 11)
+                // 자동 포맷팅 적용
+                if (limitedNumbers.length <= 3) {
+                  setEditForm({ ...editForm, phone: limitedNumbers })
+                } else if (limitedNumbers.length <= 7) {
+                  setEditForm({ ...editForm, phone: limitedNumbers.replace(/(\d{3})(\d{0,4})/, '$1-$2') })
+                } else {
+                  setEditForm({ ...editForm, phone: limitedNumbers.replace(/(\d{3})(\d{4})(\d{0,4})/, '$1-$2-$3') })
+                }
+              }}
               disabled={!editing}
               placeholder="010-1234-5678"
+              inputProps={{ maxLength: 13 }} // 010-1234-5678 = 13자
             />
           </Grid>
           <Grid item xs={12}>

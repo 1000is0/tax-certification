@@ -84,7 +84,7 @@ export default function CreditPlansPage() {
     }
     
     if (plan.tier === 'free') {
-      toast.info('현재 무료 플랜을 사용 중입니다.')
+      // 무료 플랜은 구독 취소로만 변경 가능하므로 버튼 숨김
       return
     }
 

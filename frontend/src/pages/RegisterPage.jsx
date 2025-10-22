@@ -40,6 +40,19 @@ export default function RegisterPage() {
     return password.length >= 8
   }
 
+  // 휴대폰 번호 형식 정규화 (010-9293-0474 형식으로 통일)
+  const normalizePhoneNumber = (phone) => {
+    // 숫자만 추출
+    const numbers = phone.replace(/\D/g, '')
+    
+    // 010으로 시작하는 11자리인지 확인
+    if (numbers.length === 11 && numbers.startsWith('010')) {
+      return numbers.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
+    }
+    
+    return phone // 형식이 맞지 않으면 원본 반환
+  }
+
   const validateForm = () => {
     const newErrors = {}
     
@@ -67,6 +80,12 @@ export default function RegisterPage() {
 
     if (!phone) {
       newErrors.phone = '휴대폰 번호를 입력해주세요.'
+    } else {
+      const normalizedPhone = normalizePhoneNumber(phone)
+      const numbers = normalizedPhone.replace(/\D/g, '')
+      if (numbers.length !== 11 || !numbers.startsWith('010')) {
+        newErrors.phone = '010으로 시작하는 11자리 휴대폰 번호를 입력해주세요.'
+      }
     }
     
     setErrors(newErrors)
@@ -88,7 +107,8 @@ export default function RegisterPage() {
     }
     
     try {
-      await registerUser({ email, password, name: name.trim(), phone })
+      const normalizedPhone = normalizePhoneNumber(phone)
+      await registerUser({ email, password, name: name.trim(), phone: normalizedPhone })
       setStep(2)
     } catch (err) {
       const errorMessage = err.response?.data?.error || '회원가입 실패'
@@ -171,10 +191,25 @@ export default function RegisterPage() {
                   fullWidth 
                   label="휴대폰 번호" 
                   value={phone} 
-                  onChange={e=>setPhone(e.target.value)}
+                  onChange={e => {
+                    const input = e.target.value
+                    // 숫자만 추출
+                    const numbers = input.replace(/\D/g, '')
+                    // 11자리까지만 허용
+                    const limitedNumbers = numbers.slice(0, 11)
+                    // 자동 포맷팅 적용
+                    if (limitedNumbers.length <= 3) {
+                      setPhone(limitedNumbers)
+                    } else if (limitedNumbers.length <= 7) {
+                      setPhone(limitedNumbers.replace(/(\d{3})(\d{0,4})/, '$1-$2'))
+                    } else {
+                      setPhone(limitedNumbers.replace(/(\d{3})(\d{4})(\d{0,4})/, '$1-$2-$3'))
+                    }
+                  }}
                   error={!!errors.phone}
                   helperText={errors.phone}
                   placeholder="010-1234-5678"
+                  inputProps={{ maxLength: 13 }} // 010-1234-5678 = 13자
                 />
               </Grid>
               <Grid item xs={12} md={6}>

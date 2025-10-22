@@ -63,7 +63,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         returnUrl, // 백엔드에서 전달받은 returnUrl 사용
         // 구매자 정보 추가 (나이스페이 JS SDK에서 직접 전달)
         buyerName: user?.name || '미입력',
-        buyerTel: user?.phone || '000-0000-0000',
+        buyerTel: user?.phone ? user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3') : '000-0000-0000',
         buyerEmail: user?.email || '',
         fnSuccess: (result) => {
           // 결제 성공 시 콜백

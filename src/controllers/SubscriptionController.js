@@ -276,6 +276,14 @@ class SubscriptionController {
         });
       }
 
+      // 다운그레이드 예약 상태에서 동일한 플랜 선택 시
+      if (subscription.pendingTier && subscription.pendingTier === newTier) {
+        return res.status(400).json({
+          error: '이미 플랜 변경을 신청하셨습니다.',
+          code: 'PENDING_TIER_SAME'
+        });
+      }
+
       const effectiveTier = subscription.pendingTier || subscription.tier;
       const oldTierConfig = Subscription.TIERS[effectiveTier];
       const newTierConfig = Subscription.TIERS[newTier];
