@@ -47,8 +47,8 @@ class PaymentController {
       console.log('[DEBUG] Payment.create 완료', { paymentId: payment.id });
 
       // 나이스페이 결제 준비 (카드만 허용)
-      const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/callback`;
-      console.log('[DEBUG] NicepayService.preparePayment 호출 전', { orderId, amount: price });
+      const returnUrl = `${process.env.BACKEND_URL || 'https://tax-certification.vercel.app'}/api/payments/callback`;
+      console.log('[DEBUG] NicepayService.preparePayment 호출 전', { orderId, amount: price, returnUrl });
       const nicepayResult = await NicepayService.preparePayment({
         orderId,
         amount: price,
@@ -147,7 +147,7 @@ class PaymentController {
       });
 
       // 나이스페이 결제 준비
-      const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/callback`;
+      const returnUrl = `${process.env.BACKEND_URL || 'https://tax-certification.vercel.app'}/api/payments/callback`;
       const nicepayResult = await NicepayService.preparePayment({
         orderId,
         amount: tierConfig.price,
@@ -187,6 +187,34 @@ class PaymentController {
         error: '결제 준비 중 오류가 발생했습니다.',
         code: 'PAYMENT_PREPARE_ERROR'
       });
+    }
+  }
+
+  /**
+   * 나이스페이 결제 완료 콜백 (POST)
+   * 결제창에서 결제 완료 후 자동으로 호출됨
+   */
+  static async paymentCallback(req, res) {
+    try {
+      console.log('[DEBUG] Payment callback received:', req.body);
+      
+      const { authResultCode, authResultMsg, tid, orderId, amount } = req.body;
+
+      // 결제 실패
+      if (authResultCode !== '0000') {
+        console.log('[DEBUG] Payment failed:', authResultMsg);
+        // 프론트엔드로 리다이렉트 (실패)
+        return res.redirect(`${process.env.FRONTEND_URL}/payment/callback?status=failed&message=${encodeURIComponent(authResultMsg || '결제에 실패했습니다.')}`);
+      }
+
+      // 결제 성공 - 프론트엔드로 리다이렉트
+      const redirectUrl = `${process.env.FRONTEND_URL}/payment/callback?status=success&orderId=${orderId}&tid=${tid}&amount=${amount}`;
+      console.log('[DEBUG] Redirecting to:', redirectUrl);
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      logError(error, { operation: 'PaymentController.paymentCallback' });
+      res.redirect(`${process.env.FRONTEND_URL}/payment/callback?status=error&message=${encodeURIComponent('결제 처리 중 오류가 발생했습니다.')}`);
     }
   }
 
