@@ -209,15 +209,15 @@ class PaymentController {
       // 결제 실패
       if (authResultCode !== '0000') {
         console.log('[DEBUG] Payment failed:', authResultMsg);
-        // 프론트엔드로 리다이렉트 (실패)
-        return res.redirect(`${process.env.FRONTEND_URL}/payment/callback?status=failed&message=${encodeURIComponent(authResultMsg || '결제에 실패했습니다.')}`);
+        // 프론트엔드로 리다이렉트 (실패) - 303 See Other (POST -> GET)
+        return res.redirect(303, `${process.env.FRONTEND_URL}/payment/callback?status=failed&message=${encodeURIComponent(authResultMsg || '결제에 실패했습니다.')}`);
       }
 
-      // 결제 성공 - 프론트엔드로 리다이렉트
+      // 결제 성공 - 프론트엔드로 리다이렉트 - 303 See Other (POST -> GET)
       const redirectUrl = `${process.env.FRONTEND_URL}/payment/callback?status=success&orderId=${orderId}&tid=${tid}&amount=${amount}`;
       console.log('[DEBUG] Redirecting to:', redirectUrl);
       
-      res.redirect(redirectUrl);
+      res.redirect(303, redirectUrl);
     } catch (error) {
       logError(error, { operation: 'PaymentController.paymentCallback' });
       res.redirect(`${process.env.FRONTEND_URL}/payment/callback?status=error&message=${encodeURIComponent('결제 처리 중 오류가 발생했습니다.')}`);

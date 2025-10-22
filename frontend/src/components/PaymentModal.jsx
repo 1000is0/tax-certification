@@ -57,6 +57,13 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         amount,
         goodsName: orderName,
         returnUrl, // 백엔드에서 전달받은 returnUrl 사용
+        fnSuccess: (result) => {
+          // 결제 성공 시 콜백
+          // returnUrl로 이미 처리되므로 여기서는 로그만 남김
+          console.log('결제 성공 callback:', result)
+          // 결제창이 닫히고 원래 페이지로 돌아옴
+          // 실제 승인 처리는 returnUrl(백엔드)에서 처리됨
+        },
         fnError: (result) => {
           console.error('결제 오류:', result)
           setError(result.errorMsg || '결제 중 오류가 발생했습니다.')
