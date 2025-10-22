@@ -19,6 +19,12 @@ class NicepayService {
     // Client ID와 Secret Key를 Base64로 인코딩
     const credentials = Buffer.from(`${this.clientId}:${this.secretKey}`).toString('base64');
     
+    logger.info('나이스페이 인증 헤더 생성', { 
+      clientId: this.clientId?.substring(0, 10) + '...', 
+      hasSecretKey: !!this.secretKey,
+      authHeader: `Basic ${credentials.substring(0, 20)}...`
+    });
+    
     return {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${credentials}`
