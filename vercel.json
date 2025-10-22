@@ -5,6 +5,16 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" }
+  ],
+  "crons": [
+    {
+      "path": "/api/subscriptions/renew",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/subscriptions/expire",
+      "schedule": "0 1 * * *"
+    }
   ]
 }
 

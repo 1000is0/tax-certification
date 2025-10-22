@@ -91,17 +91,17 @@ class SubscriptionController {
   }
 
   /**
-   * 구독 갱신 (Cron Job용 - 관리자 전용)
+   * 구독 갱신 (Cron Job용 - Vercel Cron 전용)
    * 만료된 구독을 자동 갱신하고 결제 처리
    */
   static async renewSubscriptions(req, res) {
     try {
-      // API 키 검증 (간단한 방법)
-      const apiKey = req.headers['x-api-key'];
-      if (apiKey !== process.env.INTERNAL_API_KEY) {
-        return res.status(403).json({
+      // Vercel Cron 인증 검증
+      const authHeader = req.headers['authorization'];
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return res.status(401).json({
           error: '권한이 없습니다.',
-          code: 'FORBIDDEN'
+          code: 'UNAUTHORIZED'
         });
       }
       
@@ -209,17 +209,17 @@ class SubscriptionController {
   }
   
   /**
-   * 만료된 구독 처리 (Cron Job용 - 관리자 전용)
+   * 만료된 구독 처리 (Cron Job용 - Vercel Cron 전용)
    * 결제 실패 등으로 만료된 구독을 정리
    */
   static async expireSubscriptions(req, res) {
     try {
-      // API 키 검증
-      const apiKey = req.headers['x-api-key'];
-      if (apiKey !== process.env.INTERNAL_API_KEY) {
-        return res.status(403).json({
+      // Vercel Cron 인증 검증
+      const authHeader = req.headers['authorization'];
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return res.status(401).json({
           error: '권한이 없습니다.',
-          code: 'FORBIDDEN'
+          code: 'UNAUTHORIZED'
         });
       }
       
