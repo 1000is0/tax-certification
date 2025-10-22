@@ -73,9 +73,15 @@ export default function CreditHistoryPage() {
   }
 
   const getTypeColor = (type) => {
-    if (type === 'usage' || type === 'expiration') return 'error'
-    if (type === 'refund') return 'warning'
-    return 'success'
+    const colorMap = {
+      'subscription_grant': 'primary',    // 플랜 지급 - 파란색
+      'purchase': 'success',              // 추가 구매 - 초록색
+      'admin_grant': 'info',              // 관리자 지급 - 하늘색
+      'usage': 'error',                   // 사용 - 빨간색
+      'expiration': 'warning',            // 만료 - 주황색
+      'refund': 'secondary'               // 환불 - 회색
+    }
+    return colorMap[type] || 'default'
   }
 
   return (

@@ -47,14 +47,17 @@ const query = async (table, operation, options = {}) => {
     switch (operation) {
       case 'select':
         {
-          let q = supabase.from(table).select(options.columns || '*');
+          let q = supabase.from(table).select(options.columns || '*', options.count ? { count: 'exact' } : {});
           if (options.where && typeof options.where === 'object') {
             for (const [k, v] of Object.entries(options.where)) {
               q = q.eq(k, v);
             }
           }
-          if (options.orderBy) {
-            q = q.order(options.orderBy, { ascending: options.ascending ?? false });
+          // order 옵션 처리: { created_at: 'desc' } 형태
+          if (options.order && typeof options.order === 'object') {
+            for (const [column, direction] of Object.entries(options.order)) {
+              q = q.order(column, { ascending: direction === 'asc' });
+            }
           }
           if (typeof options.offset === 'number' && typeof options.limit === 'number') {
             q = q.range(options.offset, options.offset + options.limit - 1);
