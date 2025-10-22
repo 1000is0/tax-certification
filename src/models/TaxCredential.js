@@ -449,23 +449,32 @@ class TaxCredential {
         columns: 'id'
       });
       
-      // 만료 예정 인증서 수 (30일 이내)
-      const thirtyDaysLater = new Date();
-      thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
-      
-      const expiringResult = await query('tax_credentials', 'select', {
-        where: {
-          is_active: true,
-          expires_at: { $lte: thirtyDaysLater.toISOString() }
-        },
-        columns: 'id'
-      });
+      // 만료 예정 인증서는 간단히 처리 (복잡한 쿼리 회피)
+      let expiringSoonCount = 0;
+      if (activeResult.data && activeResult.data.length > 0) {
+        // expires_at이 있는 활성 인증서 조회
+        const activeWithExpiry = await query('tax_credentials', 'select', {
+          where: { is_active: true },
+          columns: 'expires_at'
+        });
+        
+        if (activeWithExpiry.data) {
+          const thirtyDaysLater = new Date();
+          thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+          
+          expiringSoonCount = activeWithExpiry.data.filter(item => {
+            if (!item.expires_at) return false;
+            const expiryDate = new Date(item.expires_at);
+            return expiryDate <= thirtyDaysLater && expiryDate > new Date();
+          }).length;
+        }
+      }
 
       return {
-        total: totalResult.data?.length || 0,
-        active: activeResult.data?.length || 0,
-        expiringSoon: expiringResult.data?.length || 0,
-        inactive: (totalResult.data?.length || 0) - (activeResult.data?.length || 0)
+        '전체 인증서': totalResult.data?.length || 0,
+        '활성 인증서': activeResult.data?.length || 0,
+        '비활성 인증서': (totalResult.data?.length || 0) - (activeResult.data?.length || 0),
+        '만료 예정 (30일)': expiringSoonCount
       };
     } catch (error) {
       logError(error, { operation: 'TaxCredential.getStats' });
