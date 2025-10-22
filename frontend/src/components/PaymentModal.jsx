@@ -42,7 +42,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         })
       }
 
-      const { orderId, clientToken } = prepareResult
+      const { orderId, clientToken, clientId } = prepareResult
 
       // 나이스페이 SDK가 로드되었는지 확인
       if (typeof AUTHNICE === 'undefined') {
@@ -51,7 +51,8 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
 
       // 나이스페이 결제창 호출
       AUTHNICE.requestPay({
-        clientToken,
+        clientId, // 가맹점 식별 코드
+        method: 'card', // 카드 결제만 허용
         orderId,
         amount,
         goodsName: orderName,
