@@ -74,6 +74,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
   }
 
   const formatPrice = (price) => {
+    if (price === null || price === undefined) return '₩0'
     return `₩${price.toLocaleString()}`
   }
 
@@ -109,7 +110,7 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
                 크레딧
               </Typography>
               <Typography variant="h6" gutterBottom>
-                {credits.toLocaleString()} 크레딧
+                {(credits || 0).toLocaleString()} 크레딧
               </Typography>
             </>
           )}
