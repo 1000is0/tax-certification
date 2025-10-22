@@ -44,12 +44,16 @@ class CreditController {
         type
       });
 
+      // 전체 개수 조회
+      const totalCount = await CreditTransaction.countByUserId(userId, { type });
+
       res.json({
         transactions: transactions.map(t => t.toJSON()),
+        totalCount,
         pagination: {
           limit: parseInt(limit),
           offset: parseInt(offset),
-          total: transactions.length
+          total: totalCount
         }
       });
     } catch (error) {

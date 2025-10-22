@@ -109,6 +109,33 @@ class CreditTransaction {
   }
 
   /**
+   * 사용자의 크레딧 거래 총 개수 조회
+   */
+  static async countByUserId(userId, { type = null } = {}) {
+    try {
+      const options = {
+        where: { user_id: userId },
+        count: true
+      };
+
+      if (type) {
+        options.where.type = type;
+      }
+
+      const result = await query('credit_transactions', 'select', options);
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return result.count || 0;
+    } catch (error) {
+      logError(error, { operation: 'CreditTransaction.countByUserId', userId });
+      throw error;
+    }
+  }
+
+  /**
    * 사용자의 현재 크레딧 잔액 조회
    */
   static async getBalance(userId) {

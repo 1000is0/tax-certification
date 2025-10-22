@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react'
 import { AppBar, Toolbar, Typography, Box, Container, Button, Chip } from '@mui/material'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { creditService } from '../services/api'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuthStore()
   const [creditBalance, setCreditBalance] = useState(null)
   const [tier, setTier] = useState('free')
 
+  // 로그인 시 또는 페이지 이동 시 크레딧 업데이트
   useEffect(() => {
     if (user) {
       fetchCreditBalance()
     }
-  }, [user])
+  }, [user, location.pathname])
 
   const fetchCreditBalance = async () => {
     try {
