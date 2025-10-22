@@ -194,6 +194,30 @@ class WebhookController {
   }
 
   /**
+   * 나이스페이 웹훅 테스트 (GET 요청)
+   * 나이스페이가 웹훅 URL 등록 시 GET으로 확인
+   */
+  static async nicepayWebhookTest(req, res) {
+    try {
+      logger.info('나이스페이 웹훅 테스트 요청 수신');
+      
+      // 나이스페이에 성공 응답
+      res.status(200).json({ 
+        resultCode: '0000', 
+        resultMsg: 'Webhook URL is active',
+        status: 'OK',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logError(error, { operation: 'WebhookController.nicepayWebhookTest' });
+      res.status(500).json({ 
+        resultCode: '5000', 
+        resultMsg: '서버 오류' 
+      });
+    }
+  }
+
+  /**
    * 나이스페이 웹훅 (가상계좌 입금 완료 등)
    */
   static async nicepayWebhook(req, res) {
