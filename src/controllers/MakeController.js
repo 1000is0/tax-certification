@@ -115,8 +115,8 @@ class MakeController {
         }
 
         // 인증서 정보 복호화
-        const decryptedCredential = await TaxCredential.decryptByClientId(businessNumber);
-        if (!decryptedCredential) {
+        const decryptedResult = await TaxCredential.decryptByClientId(businessNumber);
+        if (!decryptedResult) {
           return res.status(500).json({
             success: false,
             error: 'CERTIFICATE_DECRYPTION_FAILED',
@@ -125,9 +125,9 @@ class MakeController {
         }
 
         response.certificateData = {
-          certData: decryptedCredential.certData,
-          privateKey: decryptedCredential.privateKey,
-          certPassword: decryptedCredential.certPassword
+          certData: decryptedResult.decryptedData.certData,
+          privateKey: decryptedResult.decryptedData.privateKey,
+          certPassword: decryptedResult.decryptedData.certPassword
         };
       }
 
