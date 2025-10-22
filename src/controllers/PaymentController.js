@@ -191,14 +191,18 @@ class PaymentController {
   }
 
   /**
-   * 나이스페이 결제 완료 콜백 (POST)
+   * 나이스페이 결제 완료 콜백 (GET/POST)
    * 결제창에서 결제 완료 후 자동으로 호출됨
    */
   static async paymentCallback(req, res) {
     try {
-      console.log('[DEBUG] Payment callback received:', req.body);
+      console.log('[DEBUG] Payment callback received - Method:', req.method);
+      console.log('[DEBUG] Query params:', req.query);
+      console.log('[DEBUG] Body params:', req.body);
       
-      const { authResultCode, authResultMsg, tid, orderId, amount } = req.body;
+      // GET 또는 POST 방식 모두 처리
+      const params = req.method === 'GET' ? req.query : req.body;
+      const { authResultCode, authResultMsg, tid, orderId, amount } = params;
 
       // 결제 실패
       if (authResultCode !== '0000') {

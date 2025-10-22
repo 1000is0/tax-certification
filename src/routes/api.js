@@ -75,7 +75,7 @@ router.get('/credits/subscription', authenticateToken, CreditController.getMySub
 // 결제 관련 라우트
 router.post('/payments/prepare/credit', authenticateToken, PaymentController.prepareCreditPayment);
 router.post('/payments/prepare/subscription', authenticateToken, PaymentController.prepareSubscriptionPayment);
-router.post('/payments/callback', PaymentController.paymentCallback); // 나이스페이 결제 완료 콜백 (인증 불필요)
+router.all('/payments/callback', PaymentController.paymentCallback); // 나이스페이 결제 완료 콜백 (GET/POST 모두 허용, 인증 불필요)
 router.post('/payments/approve', authenticateToken, PaymentController.approvePayment);
 router.post('/payments/cancel', authenticateToken, PaymentController.cancelPayment);
 router.get('/payments/history', authenticateToken, PaymentController.getPaymentHistory);
