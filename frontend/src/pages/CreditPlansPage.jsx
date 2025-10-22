@@ -23,6 +23,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import StarIcon from '@mui/icons-material/Star'
 import ContactMailIcon from '@mui/icons-material/ContactMail'
 import { creditService } from '../services/api'
+import PaymentModal from '../components/PaymentModal'
 import toast from 'react-hot-toast'
 
 function TabPanel({ children, value, index, ...other }) {
@@ -43,6 +44,8 @@ export default function CreditPlansPage() {
   const [oneTimeCredits, setOneTimeCredits] = useState([])
   const [currentSubscription, setCurrentSubscription] = useState(null)
   const [tabValue, setTabValue] = useState(0)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [paymentData, setPaymentData] = useState(null)
 
   useEffect(() => {
     fetchData()
@@ -82,13 +85,38 @@ export default function CreditPlansPage() {
       return
     }
 
-    // TODO: 결제 페이지로 이동
-    toast.info('결제 기능은 곧 추가될 예정입니다.')
+    // 결제 모달 열기
+    setPaymentData({
+      type: 'subscription',
+      tier: plan.tier,
+      amount: plan.price,
+      orderName: `${plan.name} 구독`
+    })
+    setPaymentModalOpen(true)
   }
 
   const handlePurchaseCredits = (creditPack) => {
-    // TODO: 결제 페이지로 이동
-    toast.info('결제 기능은 곧 추가될 예정입니다.')
+    // 결제 모달 열기
+    setPaymentData({
+      type: 'credit',
+      creditPackId: creditPack.id,
+      credits: creditPack.credits + (creditPack.bonus || 0),
+      amount: creditPack.price,
+      orderName: `크레딧 구매 (${creditPack.credits + (creditPack.bonus || 0)}개)`
+    })
+    setPaymentModalOpen(true)
+  }
+
+  const handlePaymentSuccess = () => {
+    setPaymentModalOpen(false)
+    toast.success('결제가 완료되었습니다!')
+    // 데이터 새로고침
+    fetchData()
+  }
+
+  const handlePaymentModalClose = () => {
+    setPaymentModalOpen(false)
+    setPaymentData(null)
   }
 
   const formatPrice = (price) => {
@@ -364,6 +392,14 @@ export default function CreditPlansPage() {
           </Typography>
         </Box>
       </TabPanel>
+
+      {/* 결제 모달 */}
+      <PaymentModal
+        open={paymentModalOpen}
+        onClose={handlePaymentModalClose}
+        paymentData={paymentData}
+        onSuccess={handlePaymentSuccess}
+      />
     </Container>
   )
 }

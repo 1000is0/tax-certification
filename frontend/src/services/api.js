@@ -260,6 +260,58 @@ export const authService = {
   }
 }
 
+export const paymentService = {
+  // 크레딧 구매 결제 준비
+  async prepareCreditPayment(data) {
+    try {
+      const response = await api.post('/payments/prepare/credit', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 구독 결제 준비
+  async prepareSubscriptionPayment(data) {
+    try {
+      const response = await api.post('/payments/prepare/subscription', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 결제 승인
+  async approvePayment(data) {
+    try {
+      const response = await api.post('/payments/approve', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 결제 취소
+  async cancelPayment(data) {
+    try {
+      const response = await api.post('/payments/cancel', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 결제 내역 조회
+  async getPaymentHistory(params = {}) {
+    try {
+      const response = await api.get('/payments/history', { params })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+}
+
 export const adminService = {
   // 모든 인증서 조회
   async getAllCredentials(params = {}) {

@@ -10,6 +10,7 @@ import CredentialPage from './pages/CredentialPage'
 import CredentialFormPage from './pages/CredentialFormPage'
 import CreditHistoryPage from './pages/CreditHistoryPage'
 import CreditPlansPage from './pages/CreditPlansPage'
+import PaymentCallbackPage from './pages/PaymentCallbackPage'
 import AdminPage from './pages/AdminPage'
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
                   <Route path="/credentials/:id/edit" element={<CredentialFormPage />} />
                   <Route path="/credits/history" element={<CreditHistoryPage />} />
                   <Route path="/credits/plans" element={<CreditPlansPage />} />
+                  <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                   {user?.role === 'admin' && (
                     <Route path="/admin" element={<AdminPage />} />
                   )}
