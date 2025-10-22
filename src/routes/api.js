@@ -4,6 +4,7 @@ const AuthController = require('../controllers/AuthController');
 const CredentialController = require('../controllers/CredentialController');
 const CreditController = require('../controllers/CreditController');
 const UserController = require('../controllers/UserController');
+const PaymentController = require('../controllers/PaymentController');
 const WebhookController = require('../controllers/WebhookController');
 const { authenticateToken, requireAdmin, authenticateAPIKey, auditLog } = require('../middleware/auth');
 const { requireCredit } = require('../middleware/creditCheck');
@@ -70,6 +71,13 @@ router.get('/credits', authenticateToken, CreditController.getBalance);
 router.get('/credits/history', authenticateToken, CreditController.getHistory);
 router.get('/credits/plans', CreditController.getPlans);
 router.get('/credits/subscription', authenticateToken, CreditController.getMySubscription);
+
+// 결제 관련 라우트
+router.post('/payments/prepare/credit', authenticateToken, PaymentController.prepareCreditPayment);
+router.post('/payments/prepare/subscription', authenticateToken, PaymentController.prepareSubscriptionPayment);
+router.post('/payments/approve', authenticateToken, PaymentController.approvePayment);
+router.post('/payments/cancel', authenticateToken, PaymentController.cancelPayment);
+router.get('/payments/history', authenticateToken, PaymentController.getPaymentHistory);
 
 // 관리자용 라우트
 router.get('/admin/credentials', authenticateToken, requireAdmin, CredentialController.getAllCredentials);
