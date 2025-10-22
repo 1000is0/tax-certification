@@ -319,14 +319,14 @@ class PaymentController {
       if (payment.paymentType === 'one_time_credit') {
         // 일회성 크레딧 지급
         const credits = payment.metadata.credits;
-        await CreditTransaction.create(
+        await CreditTransaction.create({
           userId,
-          credits,
-          'purchase',
-          `크레딧 구매 (${payment.orderName})`,
-          payment.id,
-          null // 만료일 없음
-        );
+          amount: credits,
+          type: 'purchase',
+          description: `크레딧 구매 (${payment.orderName})`,
+          relatedId: payment.id,
+          expiresAt: null // 만료일 없음
+        });
 
         logger.info('크레딧 구매 완료', { orderId, userId, credits });
 
