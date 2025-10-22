@@ -199,21 +199,17 @@ class WebhookController {
    */
   static async nicepayWebhookTest(req, res) {
     try {
-      logger.info('나이스페이 웹훅 테스트 요청 수신');
-      
-      // 나이스페이에 성공 응답
-      res.status(200).json({ 
-        resultCode: '0000', 
-        resultMsg: 'Webhook URL is active',
-        status: 'OK',
-        timestamp: new Date().toISOString()
+      logger.info('나이스페이 웹훅 테스트 요청 수신', {
+        method: req.method,
+        query: req.query,
+        headers: req.headers
       });
+      
+      // 나이스페이에 단순 OK 텍스트 응답
+      res.status(200).send('OK');
     } catch (error) {
       logError(error, { operation: 'WebhookController.nicepayWebhookTest' });
-      res.status(500).json({ 
-        resultCode: '5000', 
-        resultMsg: '서버 오류' 
-      });
+      res.status(500).send('ERROR');
     }
   }
 
