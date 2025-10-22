@@ -1,5 +1,5 @@
 const { query } = require('../config/supabase');
-const { logError } = require('../utils/logger');
+const { logError, logger } = require('../utils/logger');
 const CreditTransaction = require('./CreditTransaction');
 
 /**
