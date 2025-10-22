@@ -23,7 +23,8 @@
     "react-hook-form": "^7.48.2",
     "@hookform/resolvers": "^3.3.2",
     "yup": "^1.4.0",
-    "react-hot-toast": "^2.4.1"
+    "react-hot-toast": "^2.4.1",
+    "date-fns": "^2.30.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
