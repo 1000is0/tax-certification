@@ -139,6 +139,49 @@ export const credentialService = {
   }
 }
 
+// 크레딧 서비스
+export const creditService = {
+  // 크레딧 잔액 조회
+  async getBalance() {
+    try {
+      const response = await api.get('/credits')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 크레딧 이력 조회
+  async getHistory(params = {}) {
+    try {
+      const response = await api.get('/credits/history', { params })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 구독 플랜 목록 조회
+  async getPlans() {
+    try {
+      const response = await api.get('/credits/plans')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 내 구독 정보 조회
+  async getMySubscription() {
+    try {
+      const response = await api.get('/credits/subscription')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+}
+
 export const authService = {
   // 로그인
   async login(email, password) {

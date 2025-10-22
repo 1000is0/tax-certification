@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const AuthController = require('../controllers/AuthController');
 const CredentialController = require('../controllers/CredentialController');
+const CreditController = require('../controllers/CreditController');
 const WebhookController = require('../controllers/WebhookController');
 const { authenticateToken, requireAdmin, authenticateAPIKey, auditLog } = require('../middleware/auth');
 
@@ -62,9 +63,16 @@ router.delete('/credentials/:id', authenticateToken, auditLog('delete', 'credent
 router.post('/credentials/:id/deactivate', authenticateToken, auditLog('update', 'credentials'), CredentialController.deactivateCredential);
 router.post('/credentials/test-connection', authenticateToken, clientIdValidation, CredentialController.testConnection);
 
+// 크레딧 관련 라우트
+router.get('/credits', authenticateToken, CreditController.getBalance);
+router.get('/credits/history', authenticateToken, CreditController.getHistory);
+router.get('/credits/plans', CreditController.getPlans);
+router.get('/credits/subscription', authenticateToken, CreditController.getMySubscription);
+
 // 관리자용 라우트
 router.get('/admin/credentials', authenticateToken, requireAdmin, CredentialController.getAllCredentials);
 router.get('/admin/credentials/stats', authenticateToken, requireAdmin, CredentialController.getCredentialStats);
+router.post('/admin/credits/grant', authenticateToken, requireAdmin, CreditController.adminGrant);
 
 // Make 웹훅용 라우트 (API 키 인증)
 router.post('/webhook/decrypt-credentials', authenticateAPIKey, clientIdValidation, WebhookController.decryptCredentials);

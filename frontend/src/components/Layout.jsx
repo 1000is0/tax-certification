@@ -1,11 +1,31 @@
-import React from 'react'
-import { AppBar, Toolbar, Typography, Box, Container, Button } from '@mui/material'
+import React, { useState, useEffect } from 'react'
+import { AppBar, Toolbar, Typography, Box, Container, Button, Chip } from '@mui/material'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { creditService } from '../services/api'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const [creditBalance, setCreditBalance] = useState(null)
+  const [tier, setTier] = useState('free')
+
+  useEffect(() => {
+    if (user) {
+      fetchCreditBalance()
+    }
+  }, [user])
+
+  const fetchCreditBalance = async () => {
+    try {
+      const data = await creditService.getBalance()
+      setCreditBalance(data.balance)
+      setTier(data.tier)
+    } catch (error) {
+      console.error('크레딧 조회 실패:', error)
+    }
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -26,6 +46,20 @@ export default function Layout({ children }) {
           </Typography>
           {user ? (
             <>
+              {creditBalance !== null && (
+                <Chip
+                  icon={<AccountBalanceWalletIcon />}
+                  label={`${creditBalance.toLocaleString()} 크레딧`}
+                  color="secondary"
+                  variant="outlined"
+                  sx={{ 
+                    mr: 2, 
+                    color: '#fff', 
+                    borderColor: '#fff',
+                    '& .MuiChip-icon': { color: '#fff' }
+                  }}
+                />
+              )}
               <Button color="inherit" component={Link} to="/credentials">내 인증서</Button>
               {user.role === 'admin' && (
                 <Button color="inherit" component={Link} to="/admin">관리</Button>
