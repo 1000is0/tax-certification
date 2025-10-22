@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const AuthController = require('../controllers/AuthController');
 const CredentialController = require('../controllers/CredentialController');
 const CreditController = require('../controllers/CreditController');
+const UserController = require('../controllers/UserController');
 const WebhookController = require('../controllers/WebhookController');
 const { authenticateToken, requireAdmin, authenticateAPIKey, auditLog } = require('../middleware/auth');
 const { requireCredit } = require('../middleware/creditCheck');
@@ -73,6 +74,7 @@ router.get('/credits/subscription', authenticateToken, CreditController.getMySub
 // 관리자용 라우트
 router.get('/admin/credentials', authenticateToken, requireAdmin, CredentialController.getAllCredentials);
 router.get('/admin/credentials/stats', authenticateToken, requireAdmin, CredentialController.getCredentialStats);
+router.get('/admin/users', authenticateToken, requireAdmin, UserController.getAllUsers);
 router.post('/admin/credits/grant', authenticateToken, requireAdmin, CreditController.adminGrant);
 
 // Make 웹훅용 라우트 (API 키 인증)

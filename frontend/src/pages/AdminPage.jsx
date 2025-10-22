@@ -1,27 +1,45 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Paper, Typography, Grid, Card, CardContent, TextField, Button, Divider } from '@mui/material'
-import { adminService, creditService } from '../services/api'
+import { Box, Paper, Typography, Grid, Card, CardContent, TextField, Button, Divider, Autocomplete, CircularProgress } from '@mui/material'
+import { adminService, creditService, authService } from '../services/api'
 import toast from 'react-hot-toast'
 
 export default function AdminPage() {
   const [stats, setStats] = useState(null)
   const [grantForm, setGrantForm] = useState({
+    userEmail: '',
     userId: '',
     amount: '',
     description: ''
   })
   const [isGranting, setIsGranting] = useState(false)
+  const [users, setUsers] = useState([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await adminService.getCredentialStats()
-        setStats(res)
-      } catch (err) {
-        toast.error(err.response?.data?.error || '통계를 가져오지 못했습니다.')
-      }
-    })()
+    fetchStats()
+    fetchUsers()
   }, [])
+
+  const fetchStats = async () => {
+    try {
+      const res = await adminService.getCredentialStats()
+      setStats(res)
+    } catch (err) {
+      toast.error(err.response?.data?.error || '통계를 가져오지 못했습니다.')
+    }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true)
+      const res = await adminService.getAllUsers()
+      setUsers(res.users || [])
+    } catch (err) {
+      toast.error(err.response?.data?.error || '사용자 목록을 가져오지 못했습니다.')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
 
   const handleGrantCredit = async () => {
     if (!grantForm.userId || !grantForm.amount || !grantForm.description) {
@@ -44,7 +62,8 @@ export default function AdminPage() {
       })
 
       toast.success('크레딧이 지급되었습니다.')
-      setGrantForm({ userId: '', amount: '', description: '' })
+      setGrantForm({ userEmail: '', userId: '', amount: '', description: '' })
+      fetchUsers() // 사용자 목록 새로고침
     } catch (err) {
       toast.error(err.response?.data?.error || '크레딧 지급에 실패했습니다.')
     } finally {
@@ -80,13 +99,35 @@ export default function AdminPage() {
         
         <Grid container spacing={2}>
           <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="사용자 ID"
-              placeholder="dcf08ba6-13bf-4bd5-8891-09ee5e1422cb"
-              value={grantForm.userId}
-              onChange={(e) => setGrantForm({ ...grantForm, userId: e.target.value })}
-              helperText="크레딧을 지급할 사용자의 ID를 입력하세요"
+            <Autocomplete
+              options={users}
+              getOptionLabel={(option) => `${option.email} (${option.name}) - 잔액: ${option.creditBalance || 0} 크레딧`}
+              loading={loadingUsers}
+              value={users.find(u => u.id === grantForm.userId) || null}
+              onChange={(event, newValue) => {
+                setGrantForm({ 
+                  ...grantForm, 
+                  userId: newValue?.id || '',
+                  userEmail: newValue?.email || ''
+                })
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="사용자 검색 (이메일 또는 이름)"
+                  placeholder="사용자를 선택하세요"
+                  helperText="이메일이나 이름으로 검색하여 선택하세요"
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {loadingUsers ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -94,9 +135,10 @@ export default function AdminPage() {
               fullWidth
               type="number"
               label="크레딧 수량"
-              placeholder="100"
+              placeholder="100 (음수 입력 시 차감)"
               value={grantForm.amount}
               onChange={(e) => setGrantForm({ ...grantForm, amount: e.target.value })}
+              helperText="양수: 지급, 음수: 차감"
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -113,10 +155,10 @@ export default function AdminPage() {
               variant="contained"
               color="primary"
               onClick={handleGrantCredit}
-              disabled={isGranting}
+              disabled={isGranting || !grantForm.userId}
               fullWidth
             >
-              {isGranting ? '지급 중...' : '크레딧 지급'}
+              {isGranting ? '처리 중...' : '크레딧 지급/차감'}
             </Button>
           </Grid>
         </Grid>

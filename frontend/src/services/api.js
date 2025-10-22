@@ -281,6 +281,16 @@ export const adminService = {
     }
   },
 
+  // 모든 사용자 조회
+  async getAllUsers() {
+    try {
+      const response = await api.get('/admin/users')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
   // 크레딧 지급
   async grantCredits(data) {
     try {

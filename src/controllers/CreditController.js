@@ -62,7 +62,7 @@ class CreditController {
   }
 
   /**
-   * 관리자: 크레딧 지급
+   * 관리자: 크레딧 지급/차감
    */
   static async adminGrant(req, res) {
     try {
@@ -76,9 +76,9 @@ class CreditController {
         });
       }
 
-      if (amount <= 0) {
+      if (amount === 0) {
         return res.status(400).json({
-          error: '지급할 크레딧은 양수여야 합니다.',
+          error: '크레딧 수량은 0이 될 수 없습니다.',
           code: 'INVALID_AMOUNT'
         });
       }
@@ -90,21 +90,30 @@ class CreditController {
         adminId
       );
 
-      logSecurity('Admin granted credits', {
+      logSecurity('Admin adjusted credits', {
         adminId,
         targetUserId: userId,
         amount,
+        action: amount > 0 ? 'grant' : 'deduct',
         ip: req.ip
       });
 
       res.json({
-        message: '크레딧이 지급되었습니다.',
+        message: amount > 0 ? '크레딧이 지급되었습니다.' : '크레딧이 차감되었습니다.',
         transaction: transaction.toJSON()
       });
     } catch (error) {
       logError(error, { operation: 'CreditController.adminGrant' });
+      
+      if (error.message.includes('부족')) {
+        return res.status(400).json({
+          error: error.message,
+          code: 'INSUFFICIENT_CREDITS'
+        });
+      }
+
       res.status(500).json({
-        error: '크레딧 지급 중 오류가 발생했습니다.',
+        error: '크레딧 처리 중 오류가 발생했습니다.',
         code: 'CREDIT_GRANT_ERROR'
       });
     }

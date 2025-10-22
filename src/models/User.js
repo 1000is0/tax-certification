@@ -11,6 +11,8 @@ class User {
     this.role = data.role;
     this.isActive = data.is_active;
     this.lastLogin = data.last_login;
+    this.creditBalance = data.credit_balance;
+    this.subscriptionTier = data.subscription_tier;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }
@@ -72,6 +74,25 @@ class User {
       return new User(result.data[0]);
     } catch (error) {
       logError(error, { operation: 'User.findByEmail' });
+      throw error;
+    }
+  }
+
+  // 모든 사용자 조회 (관리자용)
+  static async findAll() {
+    try {
+      const result = await query('users', 'select', {
+        columns: 'id, email, name, role, credit_balance, subscription_tier, created_at',
+        order: { created_at: 'desc' }
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return (result.data || []).map(userData => new User(userData));
+    } catch (error) {
+      logError(error, { operation: 'User.findAll' });
       throw error;
     }
   }

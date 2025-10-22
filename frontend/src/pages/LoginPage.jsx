@@ -51,7 +51,6 @@ export default function LoginPage() {
     
     try {
       await login(email, password)
-      toast.success('로그인 성공')
       navigate('/dashboard')
     } catch (err) {
       const errorMessage = err.response?.data?.error || '로그인 실패'
