@@ -29,6 +29,7 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import toast from 'react-hot-toast'
 import { credentialService } from '../services/api'
+import { useAuthStore } from '../stores/authStore'
 import axios from 'axios'
 
 const schema = yup.object({
@@ -65,6 +66,7 @@ const schema = yup.object({
 function CredentialFormPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { user } = useAuthStore()
   const isEdit = Boolean(id)
   const [isLoading, setIsLoading] = useState(false)
   const [testResult, setTestResult] = useState(null)
@@ -387,17 +389,13 @@ function CredentialFormPage() {
                               label="상호"
                               placeholder="소나무세무그룹"
                               fullWidth
-                              disabled={testCompleted}
+                              disabled={true}
+                              value={user?.companyName || ''}
                               error={!!errors.certName}
-                              helperText={errors.certName?.message}
+                              helperText="회원가입 시 입력한 상호명이 자동으로 설정됩니다"
                               onFocus={() => setFocused({ ...focused, certName: true })}
                               onBlur={() => setFocused({ ...focused, certName: false })}
                             />
-                            {(focused.certName || field.value) && !errors.certName && (
-                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                사업자등록증에 표시된 상호를 정확히 입력하세요
-                              </FormHelperText>
-                            )}
                           </Box>
                         )}
                       />
@@ -414,19 +412,14 @@ function CredentialFormPage() {
                               label="사업자등록번호"
                               placeholder="1234567890"
                               fullWidth
-                              disabled={testCompleted}
+                              disabled={true}
+                              value={user?.businessNumber || ''}
                               error={!!errors.clientId}
-                              helperText={errors.clientId?.message}
+                              helperText="회원가입 시 입력한 사업자등록번호가 자동으로 설정됩니다"
                               inputProps={{ maxLength: 10 }}
                               onFocus={() => setFocused({ ...focused, clientId: true })}
                               onBlur={() => setFocused({ ...focused, clientId: false })}
-                              onChange={(e) => field.onChange(e.target.value.replace(/[^0-9]/g, ''))}
                             />
-                            {(focused.clientId || field.value) && !errors.clientId && (
-                              <FormHelperText sx={{ color: 'text.secondary', fontSize: '0.75rem', mt: 0.5 }}>
-                                숫자만 입력하세요
-                              </FormHelperText>
-                            )}
                           </Box>
                         )}
                       />

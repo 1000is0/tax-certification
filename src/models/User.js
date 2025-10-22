@@ -23,7 +23,7 @@ class User {
   // 사용자 생성
   static async create(userData) {
     try {
-      const { email, password, name, phone, role = 'user' } = userData;
+      const { email, password, name, phone, businessNumber, companyName, role = 'user' } = userData;
       
       // 비밀번호 해시화
       const bcrypt = require('bcryptjs');
@@ -36,6 +36,8 @@ class User {
           password_hash: passwordHash,
           name,
           phone,
+          business_number: businessNumber,
+          company_name: companyName,
           role
         }
       });

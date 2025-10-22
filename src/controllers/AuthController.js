@@ -38,6 +38,8 @@ class AuthController {
         password,
         name,
         phone,
+        businessNumber: req.body.businessNumber,
+        companyName: req.body.companyName,
         role: role || 'user'
       });
 

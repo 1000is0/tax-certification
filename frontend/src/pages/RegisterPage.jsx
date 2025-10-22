@@ -19,6 +19,8 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [businessNumber, setBusinessNumber] = useState('')
+  const [companyName, setCompanyName] = useState('')
   
   // 에러 상태
   const [errors, setErrors] = useState({})
@@ -87,6 +89,19 @@ export default function RegisterPage() {
         newErrors.phone = '010으로 시작하는 11자리 휴대폰 번호를 입력해주세요.'
       }
     }
+
+    if (!businessNumber) {
+      newErrors.businessNumber = '사업자등록번호를 입력해주세요.'
+    } else {
+      const numbers = businessNumber.replace(/\D/g, '')
+      if (numbers.length !== 10) {
+        newErrors.businessNumber = '사업자등록번호는 10자리 숫자여야 합니다.'
+      }
+    }
+
+    if (!companyName || companyName.trim().length < 2) {
+      newErrors.companyName = '상호명을 입력해주세요.'
+    }
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -108,7 +123,15 @@ export default function RegisterPage() {
     
     try {
       const normalizedPhone = normalizePhoneNumber(phone)
-      await registerUser({ email, password, name: name.trim(), phone: normalizedPhone })
+      const normalizedBusinessNumber = businessNumber.replace(/\D/g, '')
+      await registerUser({ 
+        email, 
+        password, 
+        name: name.trim(), 
+        phone: normalizedPhone,
+        businessNumber: normalizedBusinessNumber,
+        companyName: companyName.trim()
+      })
       setStep(2)
     } catch (err) {
       const errorMessage = err.response?.data?.error || '회원가입 실패'
@@ -210,6 +233,43 @@ export default function RegisterPage() {
                   helperText={errors.phone}
                   placeholder="010-1234-5678"
                   inputProps={{ maxLength: 13 }} // 010-1234-5678 = 13자
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  fullWidth 
+                  label="사업자등록번호" 
+                  value={businessNumber} 
+                  onChange={e => {
+                    const input = e.target.value
+                    // 숫자만 추출
+                    const numbers = input.replace(/\D/g, '')
+                    // 10자리까지만 허용
+                    const limitedNumbers = numbers.slice(0, 10)
+                    // 자동 포맷팅 적용 (123-45-67890)
+                    if (limitedNumbers.length <= 3) {
+                      setBusinessNumber(limitedNumbers)
+                    } else if (limitedNumbers.length <= 5) {
+                      setBusinessNumber(limitedNumbers.replace(/(\d{3})(\d{0,2})/, '$1-$2'))
+                    } else {
+                      setBusinessNumber(limitedNumbers.replace(/(\d{3})(\d{2})(\d{0,5})/, '$1-$2-$3'))
+                    }
+                  }}
+                  error={!!errors.businessNumber}
+                  helperText={errors.businessNumber}
+                  placeholder="123-45-67890"
+                  inputProps={{ maxLength: 12 }} // 123-45-67890 = 12자
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  fullWidth 
+                  label="상호명" 
+                  value={companyName} 
+                  onChange={e=>setCompanyName(e.target.value)}
+                  error={!!errors.companyName}
+                  helperText={errors.companyName}
+                  placeholder="(주)테스트회사"
                 />
               </Grid>
               <Grid item xs={12} md={6}>
