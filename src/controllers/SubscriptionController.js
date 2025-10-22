@@ -149,7 +149,22 @@ class SubscriptionController {
         });
       }
 
-      const oldTierConfig = Subscription.TIERS[subscription.tier];
+      // pending_tier가 있으면 다운그레이드 예약 상태이므로 그것과 비교
+      // 다운그레이드 취소인지 확인
+      if (subscription.pendingTier && newTier === subscription.tier) {
+        return res.json({
+          success: true,
+          type: 'downgrade_cancelled',
+          message: `${Subscription.TIERS[newTier].name} 플랜으로의 다운그레이드를 취소하시겠습니까?`,
+          requiresPayment: false,
+          oldTier: subscription.tier,
+          pendingTier: subscription.pendingTier,
+          newTier
+        });
+      }
+
+      const effectiveTier = subscription.pendingTier || subscription.tier;
+      const oldTierConfig = Subscription.TIERS[effectiveTier];
       const newTierConfig = Subscription.TIERS[newTier];
 
       if (!newTierConfig) {
@@ -235,14 +250,34 @@ class SubscriptionController {
         });
       }
 
-      if (subscription.tier === newTier) {
+      // pending_tier가 있고 현재 tier로 변경하려는 경우 = 다운그레이드 취소
+      if (subscription.pendingTier && newTier === subscription.tier) {
+        // 다운그레이드 취소는 결제 불필요
+        const result = await subscription.changeTier(newTier, null);
+        
+        logger.info('구독 다운그레이드 취소 완료', { 
+          userId, 
+          subscriptionId: subscription.id, 
+          cancelledPendingTier: subscription.pendingTier
+        });
+        
+        return res.json({
+          success: true,
+          message: result.message,
+          subscription: subscription.toJSON(),
+          ...result
+        });
+      }
+
+      if (subscription.tier === newTier && !subscription.pendingTier) {
         return res.status(400).json({
           error: '현재 플랜과 동일합니다.',
           code: 'SAME_TIER'
         });
       }
 
-      const oldTierConfig = Subscription.TIERS[subscription.tier];
+      const effectiveTier = subscription.pendingTier || subscription.tier;
+      const oldTierConfig = Subscription.TIERS[effectiveTier];
       const newTierConfig = Subscription.TIERS[newTier];
       const isUpgrade = newTierConfig.price > (oldTierConfig.price || 0);
 

@@ -12,11 +12,13 @@ import {
   Divider
 } from '@mui/material'
 import { paymentService } from '../services/api'
+import { useAuthStore } from '../stores/authStore'
 import toast from 'react-hot-toast'
 
 export default function PaymentModal({ open, onClose, paymentData, onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { user } = useAuthStore()
 
   const { type, amount, orderName, credits, tier, newTier } = paymentData || {}
 
@@ -59,6 +61,10 @@ export default function PaymentModal({ open, onClose, paymentData, onSuccess }) 
         amount,
         goodsName: orderName,
         returnUrl, // 백엔드에서 전달받은 returnUrl 사용
+        // 구매자 정보 추가 (나이스페이 JS SDK에서 직접 전달)
+        buyerName: user?.name || '미입력',
+        buyerTel: user?.phone || '000-0000-0000',
+        buyerEmail: user?.email || '',
         fnSuccess: (result) => {
           // 결제 성공 시 콜백
           // returnUrl로 이미 처리되므로 여기서는 로그만 남김

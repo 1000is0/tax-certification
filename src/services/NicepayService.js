@@ -54,14 +54,23 @@ class NicepayService {
         requestData.payMethod = directPayMethod;
       }
 
+      console.log('====== [나이스페이] 결제 준비 요청 시작 ======');
+      console.log('[나이스페이] orderId:', orderId);
+      console.log('[나이스페이] requestData:', JSON.stringify(requestData, null, 2));
+      console.log('===========================================');
+      
       logger.info('나이스페이 결제 준비 요청', { orderId, requestData });
-
+      
       const response = await axios.post(
         `${this.apiUrl}/v1/payments/ready`,
         requestData,
         { headers: this.getHeaders() }
       );
 
+      console.log('====== [나이스페이] 결제 준비 응답 수신 ======');
+      console.log('[나이스페이] responseData:', JSON.stringify(response.data, null, 2));
+      console.log('===========================================');
+      
       logger.info('나이스페이 결제 준비 성공', { orderId, responseData: response.data });
       
       return {

@@ -128,6 +128,16 @@ export default function CreditPlansPage() {
           const result = await subscriptionService.changeTier(plan.tier)
           toast.success(result.message || '플랜이 변경되었습니다!')
           fetchData()
+
+        } else if (quote.type === 'downgrade_cancelled') {
+          // 다운그레이드 취소
+          const confirmed = window.confirm(quote.message)
+          
+          if (!confirmed) return
+          
+          const result = await subscriptionService.changeTier(plan.tier)
+          toast.success(result.message || '다운그레이드가 취소되었습니다!')
+          fetchData()
         }
 
       } catch (error) {

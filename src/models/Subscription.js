@@ -10,6 +10,7 @@ class Subscription {
     this.id = data.id;
     this.userId = data.user_id;
     this.tier = data.tier;
+    this.pendingTier = data.pending_tier; // 다음 결제일부터 적용될 티어 (다운그레이드 시)
     this.status = data.status;
     this.billingKey = data.billing_key;
     this.billingCycleStart = data.billing_cycle_start;
@@ -384,7 +385,10 @@ class Subscription {
    */
   async changeTier(newTier, paymentResult = null) {
     try {
-      const oldTierConfig = Subscription.TIERS[this.tier];
+      // pending_tier가 있으면 다운그레이드 예약 상태
+      // 이 경우 현재 티어와 비교하는 것이 아니라 pending_tier와 비교
+      const effectiveTier = this.pendingTier || this.tier;
+      const oldTierConfig = Subscription.TIERS[effectiveTier];
       const newTierConfig = Subscription.TIERS[newTier];
       
       if (!newTierConfig) {
@@ -408,7 +412,27 @@ class Subscription {
       // 남은 기간 비율
       const remainingRatio = remainingDays / totalDays;
 
+      // 특별 케이스: pending_tier가 있고 현재 tier로 다시 변경하려는 경우 = 다운그레이드 취소
+      if (this.pendingTier && newTier === this.tier) {
+        logger.info('구독 다운그레이드 취소', {
+          userId: this.userId,
+          currentTier: this.tier,
+          cancelledPendingTier: this.pendingTier
+        });
+
+        // pending_tier만 제거
+        await this.update({
+          pending_tier: null
+        });
+
+        return { 
+          type: 'downgrade_cancelled', 
+          message: `${newTierConfig.name} 플랜으로의 다운그레이드가 취소되었습니다. 현재 플랜이 계속 유지됩니다.` 
+        };
+      }
+
       if (isUpgrade) {
+
         // 업그레이드: 차액 결제 필요
         const oldPriceProrated = (oldTierConfig.price || 0) * remainingRatio;
         const newPriceProrated = newTierConfig.price * remainingRatio;
@@ -437,9 +461,10 @@ class Subscription {
           ? Math.floor(newTierConfig.monthlyCredits * remainingRatio)
           : 0;
 
-        // 티어 업데이트
+        // 티어 업데이트 (pending_tier도 초기화)
         await this.update({
           tier: newTier,
+          pending_tier: null,
           monthly_credit_quota: newTierConfig.monthlyCredits,
           price: newTierConfig.price
         });
@@ -465,27 +490,19 @@ class Subscription {
         return { type: 'upgrade', additionalCharge, proratedCredits };
 
       } else if (isDowngrade) {
-        // 다운그레이드: 다음 주기부터 적용, 즉시 크레딧 변경 없음
-        logger.info('구독 다운그레이드 - 다음 주기부터 적용', {
+        // 다운그레이드: pending_tier에 저장, 다음 주기부터 적용
+        logger.info('구독 다운그레이드 - pending_tier 설정', {
           userId: this.userId,
-          oldTier: this.tier,
-          newTier,
+          currentTier: this.tier,
+          pendingTier: newTier,
           currentCycleEnd: this.billingCycleEnd,
           nextPrice: newTierConfig.price,
           nextCredits: newTierConfig.monthlyCredits
         });
 
-        // 티어 업데이트 (다음 주기부터 적용)
+        // pending_tier만 업데이트 (현재 티어와 크레딧은 유지)
         await this.update({
-          tier: newTier,
-          monthly_credit_quota: newTierConfig.monthlyCredits,
-          price: newTierConfig.price
-        });
-
-        // users 테이블 업데이트
-        await query('users', 'update', {
-          where: { id: this.userId },
-          data: { subscription_tier: newTier }
+          pending_tier: newTier
         });
 
         // 크레딧 지급 없음 (현재 주기 크레딧 유지)
