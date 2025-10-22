@@ -105,7 +105,7 @@ class MakeController {
 
       // 인증서 정보가 필요한 경우
       if (requestType === 'with_certificate') {
-        const credential = await TaxCredential.findByUserId(user.id);
+        const credential = await TaxCredential.findByClientId(businessNumber);
         if (!credential) {
           return res.status(404).json({
             success: false,
@@ -115,7 +115,7 @@ class MakeController {
         }
 
         // 인증서 정보 복호화
-        const decryptedCredential = await TaxCredential.decryptByClientId(credential.clientId);
+        const decryptedCredential = await TaxCredential.decryptByClientId(businessNumber);
         if (!decryptedCredential) {
           return res.status(500).json({
             success: false,
