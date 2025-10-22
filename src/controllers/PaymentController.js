@@ -38,14 +38,15 @@ class PaymentController {
         metadata: { credits }
       });
 
-      // 나이스페이 결제 준비
+      // 나이스페이 결제 준비 (카드만 허용)
       const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/callback`;
       const nicepayResult = await NicepayService.preparePayment({
         orderId,
         amount: price,
         goodsName: orderName,
         returnUrl,
-        mallUserId: userId
+        mallUserId: userId,
+        directPayMethod: 'CARD' // 카드 결제만 허용
       });
 
       if (!nicepayResult.success) {
