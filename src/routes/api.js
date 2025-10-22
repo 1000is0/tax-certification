@@ -17,6 +17,7 @@ const registerValidation = [
   body('email').isEmail().normalizeEmail().withMessage('유효한 이메일을 입력해주세요.'),
   body('password').isLength({ min: 8 }).withMessage('비밀번호는 최소 8자 이상이어야 합니다.'),
   body('name').trim().isLength({ min: 2 }).withMessage('이름은 최소 2자 이상이어야 합니다.'),
+  body('phone').notEmpty().withMessage('휴대폰 번호를 입력해주세요.'),
   body('role').optional().isIn(['user', 'admin']).withMessage('유효하지 않은 역할입니다.')
 ];
 
@@ -57,6 +58,11 @@ router.post('/auth/verify-password', authenticateToken, AuthController.verifyPas
 router.get('/auth/me', authenticateToken, AuthController.getCurrentUser);
 router.put('/auth/change-password', authenticateToken, changePasswordValidation, AuthController.changePassword);
 router.delete('/auth/account', authenticateToken, AuthController.deleteAccount);
+
+// 사용자 프로필 관련 라우트
+router.get('/users/profile', authenticateToken, UserController.getMyProfile);
+router.put('/users/profile', authenticateToken, UserController.updateMyProfile);
+router.put('/users/password', authenticateToken, UserController.changePassword);
 
 // 인증서 관련 라우트
 router.post('/credentials', authenticateToken, credentialValidation, auditLog('create', 'credentials'), CredentialController.createCredential);

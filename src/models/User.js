@@ -8,6 +8,7 @@ class User {
     this.email = data.email;
     this.passwordHash = data.password_hash;
     this.name = data.name;
+    this.phone = data.phone;
     this.role = data.role;
     this.isActive = data.is_active;
     this.lastLogin = data.last_login;
@@ -20,7 +21,7 @@ class User {
   // 사용자 생성
   static async create(userData) {
     try {
-      const { email, password, name, role = 'user' } = userData;
+      const { email, password, name, phone, role = 'user' } = userData;
       
       // 비밀번호 해시화
       const bcrypt = require('bcryptjs');
@@ -32,6 +33,7 @@ class User {
           email,
           password_hash: passwordHash,
           name,
+          phone,
           role
         }
       });
@@ -45,6 +47,7 @@ class User {
       logAudit('create', 'user', user.id, null, {
         email: user.email,
         name: user.name,
+        phone: user.phone,
         role: user.role
       });
 
@@ -127,11 +130,15 @@ class User {
   // 사용자 정보 업데이트
   async update(updateData) {
     try {
-      const { name, role, isActive } = updateData;
+      const { name, phone, role, isActive } = updateData;
       const updates = {};
 
       if (name !== undefined) {
         updates.name = name;
+      }
+
+      if (phone !== undefined) {
+        updates.phone = phone;
       }
 
       if (role !== undefined) {

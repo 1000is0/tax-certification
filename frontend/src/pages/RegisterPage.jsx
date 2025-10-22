@@ -17,6 +17,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   
   // 에러 상태
   const [errors, setErrors] = useState({})
@@ -58,6 +60,14 @@ export default function RegisterPage() {
     } else if (password !== confirmPassword) {
       newErrors.confirmPassword = '비밀번호가 일치하지 않습니다.'
     }
+
+    if (!name || name.trim().length < 2) {
+      newErrors.name = '이름은 최소 2자 이상 입력해주세요.'
+    }
+
+    if (!phone) {
+      newErrors.phone = '휴대폰 번호를 입력해주세요.'
+    }
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -78,8 +88,7 @@ export default function RegisterPage() {
     }
     
     try {
-      // name은 이메일의 @ 앞부분을 사용
-      await registerUser({ email, password, name: email.split('@')[0] })
+      await registerUser({ email, password, name: name.trim(), phone })
       setStep(2)
     } catch (err) {
       const errorMessage = err.response?.data?.error || '회원가입 실패'
@@ -145,6 +154,28 @@ export default function RegisterPage() {
                     올바른 이메일 형식으로 입력해주세요. (예: user@example.com)
                   </FormHelperText>
                 )}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  fullWidth 
+                  label="이름" 
+                  value={name} 
+                  onChange={e=>setName(e.target.value)}
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  placeholder="홍길동"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  fullWidth 
+                  label="휴대폰 번호" 
+                  value={phone} 
+                  onChange={e=>setPhone(e.target.value)}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  placeholder="010-1234-5678"
+                />
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField 

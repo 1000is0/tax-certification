@@ -34,7 +34,7 @@ class NicepayService {
   /**
    * 결제 준비 (클라이언트 토큰 발급)
    */
-  async preparePayment({ orderId, amount, goodsName, returnUrl, mallUserId, directPayMethod }) {
+  async preparePayment({ orderId, amount, goodsName, returnUrl, mallUserId, buyerName, buyerTel, buyerEmail, directPayMethod }) {
     try {
       const requestData = {
         orderId,
@@ -43,6 +43,11 @@ class NicepayService {
         returnUrl,
         mallUserId
       };
+
+      // 구매자 정보 추가
+      if (buyerName) requestData.buyerName = buyerName;
+      if (buyerTel) requestData.buyerTel = buyerTel;
+      if (buyerEmail) requestData.buyerEmail = buyerEmail;
 
       // 결제 수단 제한이 있는 경우 추가
       if (directPayMethod) {

@@ -1,6 +1,7 @@
 const Payment = require('../models/Payment');
 const CreditTransaction = require('../models/CreditTransaction');
 const Subscription = require('../models/Subscription');
+const User = require('../models/User');
 const NicepayService = require('../services/NicepayService');
 const { logError, logSecurity, logger } = require('../utils/logger');
 
@@ -46,6 +47,9 @@ class PaymentController {
       });
       console.log('[DEBUG] Payment.create 완료', { paymentId: payment.id });
 
+      // 사용자 정보 조회 (나이스페이 전달용)
+      const user = await User.findById(userId);
+
       // 나이스페이 결제 준비 (카드만 허용)
       const returnUrl = `${process.env.BACKEND_URL || 'https://tax-certification.vercel.app'}/api/payments/callback`;
       console.log('[DEBUG] NicepayService.preparePayment 호출 전', { orderId, amount: price, returnUrl });
@@ -55,6 +59,9 @@ class PaymentController {
         goodsName: orderName,
         returnUrl,
         mallUserId: userId,
+        buyerName: user?.name || '미입력',
+        buyerTel: user?.phone || '000-0000-0000',
+        buyerEmail: user?.email || '',
         directPayMethod: 'CARD' // 카드 결제만 허용
       });
       console.log('[DEBUG] NicepayService.preparePayment 완료', { success: nicepayResult.success });
@@ -162,6 +169,9 @@ class PaymentController {
         metadata: { oldTier: subscription.tier, newTier, remainingDays, totalDays }
       });
 
+      // 사용자 정보 조회 (나이스페이 전달용)
+      const user = await User.findById(userId);
+
       // 나이스페이 결제 준비 (카드만 허용)
       const returnUrl = `${process.env.BACKEND_URL || 'https://tax-certification.vercel.app'}/api/payments/callback`;
       const nicepayResult = await NicepayService.preparePayment({
@@ -170,6 +180,9 @@ class PaymentController {
         goodsName: orderName,
         returnUrl,
         mallUserId: userId,
+        buyerName: user?.name || '미입력',
+        buyerTel: user?.phone || '000-0000-0000',
+        buyerEmail: user?.email || '',
         directPayMethod: 'CARD'
       });
 
@@ -272,6 +285,9 @@ class PaymentController {
         }
       });
 
+      // 사용자 정보 조회 (나이스페이 전달용)
+      const user = await User.findById(userId);
+
       // 나이스페이 결제 준비
       const returnUrl = `${process.env.BACKEND_URL || 'https://tax-certification.vercel.app'}/api/payments/callback`;
       const nicepayResult = await NicepayService.preparePayment({
@@ -280,6 +296,9 @@ class PaymentController {
         goodsName: orderName,
         returnUrl,
         mallUserId: userId,
+        buyerName: user?.name || '미입력',
+        buyerTel: user?.phone || '000-0000-0000',
+        buyerEmail: user?.email || '',
         // 구독은 카드만 허용 (가상계좌 제외)
         useEscrow: false,
         directPayMethod: 'CARD' // 카드 결제만 허용

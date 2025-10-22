@@ -16,7 +16,7 @@ class AuthController {
         });
       }
 
-      const { email, password, name, role } = req.body;
+      const { email, password, name, phone, role } = req.body;
 
       // 이메일 중복 확인
       const existingUser = await User.findByEmail(email);
@@ -37,6 +37,7 @@ class AuthController {
         email,
         password,
         name,
+        phone,
         role: role || 'user'
       });
 
