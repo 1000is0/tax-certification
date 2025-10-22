@@ -53,6 +53,8 @@ class UserController {
           email: user.email,
           name: user.name,
           phone: user.phone,
+          businessNumber: user.businessNumber,
+          companyName: user.companyName,
           role: user.role,
           creditBalance: user.creditBalance || 0,
           subscriptionTier: user.subscriptionTier || 'free',

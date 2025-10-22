@@ -97,6 +97,14 @@ function CredentialFormPage() {
 
   const watchedClientId = watch('clientId')
 
+  // 사용자 정보로 폼 초기화
+  React.useEffect(() => {
+    if (user?.businessNumber && user?.companyName) {
+      setValue('clientId', user.businessNumber);
+      setValue('certName', user.companyName);
+    }
+  }, [user, setValue]);
+
   const onSubmit = async (data) => {
     // 연결 테스트가 완료되지 않았으면 저장 불가
     if (!isEdit && !testCompleted) {
@@ -391,6 +399,9 @@ function CredentialFormPage() {
                               fullWidth
                               disabled={true}
                               value={user?.companyName || ''}
+                              onChange={(e) => {
+                                field.onChange(e.target.value);
+                              }}
                               error={!!errors.certName}
                               helperText="회원가입 시 입력한 상호명이 자동으로 설정됩니다"
                               onFocus={() => setFocused({ ...focused, certName: true })}
@@ -414,6 +425,9 @@ function CredentialFormPage() {
                               fullWidth
                               disabled={true}
                               value={user?.businessNumber || ''}
+                              onChange={(e) => {
+                                field.onChange(e.target.value);
+                              }}
                               error={!!errors.clientId}
                               helperText="회원가입 시 입력한 사업자등록번호가 자동으로 설정됩니다"
                               inputProps={{ maxLength: 10 }}
