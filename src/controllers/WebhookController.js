@@ -234,17 +234,17 @@ class WebhookController {
         // 나이스페이 웹훅 등록 테스트 데이터는 무시하고 성공 응답
         if (orderId && orderId.startsWith('202510')) {
           logger.info('웹훅: 테스트 데이터 수신 - 성공 응답', { orderId });
-          return res.json({ resultCode: '0000', resultMsg: 'success' });
+          return res.status(200).send('OK');
         }
         
         logger.error('웹훅: 결제 정보 없음', { orderId });
-        return res.status(404).json({ resultCode: '4004', resultMsg: '결제 정보를 찾을 수 없습니다.' });
+        return res.status(404).send('NOT_FOUND');
       }
 
       // 이미 처리된 경우
       if (payment.status === 'paid') {
         logger.info('웹훅: 이미 처리됨', { orderId, tid });
-        return res.json({ resultCode: '0000', resultMsg: 'success' });
+        return res.status(200).send('OK');
       }
 
       // 결제 실패
@@ -253,7 +253,7 @@ class WebhookController {
           failCode: resultCode,
           failMessage: resultMsg
         });
-        return res.json({ resultCode: '0000', resultMsg: 'success' });
+        return res.status(200).send('OK');
       }
 
       // 금액 검증
@@ -267,7 +267,7 @@ class WebhookController {
           failCode: 'AMOUNT_MISMATCH',
           failMessage: `금액 불일치: 예상 ${payment.amount}, 실제 ${amount}`
         });
-        return res.status(400).json({ resultCode: '4001', resultMsg: '금액 불일치' });
+        return res.status(400).send('AMOUNT_MISMATCH');
       }
 
       // 나이스페이에서 결제 조회 (선택적 - 추가 검증)
@@ -307,7 +307,7 @@ class WebhookController {
           failCode: 'INVALID_PAYMENT_METHOD',
           failMessage: '구독은 가상계좌로 결제할 수 없습니다.'
         });
-        return res.status(400).json({ resultCode: '4002', resultMsg: '구독은 가상계좌 불가' });
+        return res.status(400).send('INVALID_PAYMENT_METHOD');
       }
 
       logSecurity('Nicepay webhook processed', {
@@ -318,17 +318,14 @@ class WebhookController {
         payMethod
       });
 
-      // 나이스페이에 성공 응답 (필수)
-      res.json({ resultCode: '0000', resultMsg: 'success' });
+      // 나이스페이에 성공 응답 (필수: 텍스트 "OK")
+      res.status(200).send('OK');
 
     } catch (error) {
       logError(error, { operation: 'WebhookController.nicepayWebhook' });
       
       // 나이스페이에 실패 응답
-      res.status(500).json({ 
-        resultCode: '5000', 
-        resultMsg: '서버 오류' 
-      });
+      res.status(500).send('ERROR');
     }
   }
 }
