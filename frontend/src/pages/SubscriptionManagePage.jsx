@@ -39,6 +39,7 @@ function SubscriptionManagePage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
 
   useEffect(() => {
     fetchSubscription()
@@ -74,6 +75,23 @@ function SubscriptionManagePage() {
       toast.error(error.response?.data?.error || '구독 취소에 실패했습니다.')
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handleReactivate = async () => {
+    try {
+      const confirmed = window.confirm('구독을 재활성화하시겠습니까? 원래 일정대로 자동 결제가 진행됩니다.')
+      if (!confirmed) return
+
+      setReactivating(true)
+      const result = await subscriptionService.reactivate()
+      toast.success(result.message || '구독이 재활성화되었습니다.')
+      fetchSubscription()
+    } catch (error) {
+      console.error('구독 재활성화 실패:', error)
+      toast.error(error.response?.data?.error || '구독 재활성화에 실패했습니다.')
+    } finally {
+      setReactivating(false)
     }
   }
 
@@ -299,6 +317,16 @@ function SubscriptionManagePage() {
           <Typography variant="caption">
             현재 주기가 끝나는 {formatDate(subscription.billingCycleEnd)}까지 서비스를 이용할 수 있습니다.
           </Typography>
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleReactivate}
+              disabled={reactivating}
+            >
+              {reactivating ? <CircularProgress size={24} /> : '구독 재활성화'}
+            </Button>
+          </Box>
         </Alert>
       )}
 

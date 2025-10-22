@@ -38,6 +38,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <App />
         <Toaster 
           position="top-right"
+          containerStyle={{
+            top: 80,  // 헤더 높이(64px) + 여유 공간
+          }}
           toastOptions={{
             duration: 4000,
             style: {

@@ -333,6 +333,16 @@ export const subscriptionService = {
     }
   },
 
+  // 구독 재활성화
+  async reactivate() {
+    try {
+      const response = await api.post('/subscriptions/reactivate')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
   // 구독 플랜 변경
   async changeTier(newTier) {
     try {

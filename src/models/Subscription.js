@@ -387,8 +387,10 @@ class Subscription {
       // 남은 기간 비율
       const remainingRatio = remainingDays / totalDays;
 
-      // 일할계산된 크레딧 (남은 기간에 비례)
-      const proratedCredits = Math.floor(newTierConfig.monthlyCredits * remainingRatio);
+      // 일할계산된 크레딧 (남은 기간에 비례, null 체크)
+      const proratedCredits = newTierConfig.monthlyCredits 
+        ? Math.floor(newTierConfig.monthlyCredits * remainingRatio)
+        : 0;
 
       logger.info('구독 티어 변경 - 일할계산', {
         userId: this.userId,
@@ -414,8 +416,8 @@ class Subscription {
         data: { subscription_tier: newTier }
       });
 
-      // 일할계산된 크레딧 지급
-      if (proratedCredits > 0) {
+      // 일할계산된 크레딧 지급 (0보다 클 때만)
+      if (proratedCredits > 0 && newTierConfig.monthlyCredits) {
         await CreditTransaction.create({
           userId: this.userId,
           amount: proratedCredits,
@@ -448,6 +450,33 @@ class Subscription {
       return this;
     } catch (error) {
       logError(error, { operation: 'Subscription.cancel', subscriptionId: this.id });
+      throw error;
+    }
+  }
+
+  /**
+   * 구독 재활성화 (취소된 구독 부활)
+   */
+  async reactivate() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // 이미 만료된 구독은 재활성화 불가
+      if (this.billingCycleEnd < today) {
+        throw new Error('만료된 구독은 재활성화할 수 없습니다.');
+      }
+
+      // 다음 결제일을 현재 주기 종료일로 설정
+      await this.update({
+        status: 'active',
+        next_billing_date: this.billingCycleEnd
+      });
+
+      logger.info('구독 재활성화', { subscriptionId: this.id, userId: this.userId });
+
+      return this;
+    } catch (error) {
+      logError(error, { operation: 'Subscription.reactivate', subscriptionId: this.id });
       throw error;
     }
   }

@@ -91,6 +91,48 @@ class SubscriptionController {
   }
 
   /**
+   * 구독 재활성화
+   */
+  static async reactivateSubscription(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      const subscription = await Subscription.findByUserId(userId);
+      
+      if (!subscription) {
+        return res.status(404).json({
+          error: '구독을 찾을 수 없습니다.',
+          code: 'SUBSCRIPTION_NOT_FOUND'
+        });
+      }
+      
+      if (subscription.status !== 'cancelled') {
+        return res.status(400).json({
+          error: '취소된 구독만 재활성화할 수 있습니다.',
+          code: 'SUBSCRIPTION_NOT_CANCELLED'
+        });
+      }
+      
+      // 구독 재활성화
+      await subscription.reactivate();
+      
+      logger.info('구독 재활성화 완료', { userId, subscriptionId: subscription.id });
+      
+      res.json({
+        success: true,
+        message: '구독이 재활성화되었습니다.',
+        subscription: subscription.toJSON()
+      });
+    } catch (error) {
+      logError(error, { operation: 'SubscriptionController.reactivateSubscription' });
+      res.status(500).json({
+        error: error.message || '구독 재활성화 중 오류가 발생했습니다.',
+        code: 'SUBSCRIPTION_REACTIVATE_ERROR'
+      });
+    }
+  }
+
+  /**
    * 구독 플랜 변경 (업그레이드/다운그레이드)
    */
   static async changeTier(req, res) {

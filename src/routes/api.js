@@ -76,6 +76,7 @@ router.get('/credits/subscription', authenticateToken, CreditController.getMySub
 // 구독 관련 라우트
 router.get('/subscriptions/my', authenticateToken, SubscriptionController.getMySubscription);
 router.post('/subscriptions/cancel', authenticateToken, SubscriptionController.cancelSubscription);
+router.post('/subscriptions/reactivate', authenticateToken, SubscriptionController.reactivateSubscription);
 router.post('/subscriptions/change-tier', authenticateToken, SubscriptionController.changeTier);
 
 // 구독 관리 API (내부/크론잡용)
