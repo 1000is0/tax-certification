@@ -229,20 +229,51 @@ class Subscription {
     try {
       const today = new Date().toISOString().split('T')[0];
 
+      // 모든 active 구독을 가져와서 JavaScript로 필터링
       const result = await query('subscriptions', 'select', {
-        where: {
-          status: 'active',
-          next_billing_date: { $lte: today }
-        }
+        where: { status: 'active' }
       });
 
       if (result.error) {
         throw result.error;
       }
 
-      return (result.data || []).map(item => new Subscription(item));
+      // next_billing_date가 오늘 이하인 구독 필터링
+      const subscriptions = (result.data || [])
+        .filter(item => item.next_billing_date <= today)
+        .map(item => new Subscription(item));
+
+      return subscriptions;
     } catch (error) {
       logError(error, { operation: 'Subscription.findDueForRenewal' });
+      throw error;
+    }
+  }
+
+  /**
+   * 만료된 구독 조회 (크론잡용)
+   */
+  static async findExpired() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // suspended 상태인 구독 중 billing_cycle_end가 지난 것들
+      const result = await query('subscriptions', 'select', {
+        where: { status: 'suspended' }
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // billing_cycle_end가 오늘보다 이전인 구독 필터링
+      const subscriptions = (result.data || [])
+        .filter(item => item.billing_cycle_end < today)
+        .map(item => new Subscription(item));
+
+      return subscriptions;
+    } catch (error) {
+      logError(error, { operation: 'Subscription.findExpired' });
       throw error;
     }
   }
@@ -363,6 +394,29 @@ class Subscription {
       return this;
     } catch (error) {
       logError(error, { operation: 'Subscription.renew', subscriptionId: this.id });
+      throw error;
+    }
+  }
+
+  /**
+   * 구독 일시정지 (결제 실패 등)
+   */
+  async suspend(reason = null) {
+    try {
+      await this.update({
+        status: 'suspended',
+        metadata: { 
+          ...this.metadata, 
+          suspend_reason: reason,
+          suspended_at: new Date().toISOString()
+        }
+      });
+
+      logger.info('구독 일시정지', { subscriptionId: this.id, reason });
+
+      return this;
+    } catch (error) {
+      logError(error, { operation: 'Subscription.suspend', subscriptionId: this.id });
       throw error;
     }
   }

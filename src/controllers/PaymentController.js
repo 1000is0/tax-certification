@@ -345,11 +345,24 @@ class PaymentController {
           billingKey: nicepayResult.billingKey
         });
 
-        logger.info('구독 생성 완료', { orderId, userId, tier });
+        // 구독 시작 시 첫 크레딧 지급
+        const tierConfig = require('../models/Subscription').TIERS[tier];
+        if (tierConfig && tierConfig.monthlyCredits) {
+          await CreditTransaction.create({
+            userId,
+            amount: tierConfig.monthlyCredits,
+            type: 'subscription_grant',
+            description: `${tierConfig.name} 플랜 구독 시작 (${tierConfig.monthlyCredits} 크레딧)`,
+            relatedId: subscription.id,
+            expiresAt: subscription.billingCycleEnd // 구독 주기 종료일에 만료
+          });
+        }
+
+        logger.info('구독 생성 및 크레딧 지급 완료', { orderId, userId, tier, credits: tierConfig?.monthlyCredits });
 
         res.json({
           success: true,
-          message: '구독이 시작되었습니다.',
+          message: `구독이 시작되었습니다. ${tierConfig.monthlyCredits} 크레딧이 지급되었습니다.`,
           payment: payment.toJSON(),
           subscription: subscription.toJSON()
         });

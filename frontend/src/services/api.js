@@ -312,6 +312,28 @@ export const paymentService = {
   }
 }
 
+export const subscriptionService = {
+  // 내 구독 정보 조회
+  async getMySubscription() {
+    try {
+      const response = await api.get('/subscriptions/my')
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  // 구독 취소
+  async cancel(reason = '') {
+    try {
+      const response = await api.post('/subscriptions/cancel', { reason })
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+}
+
 export const adminService = {
   // 모든 인증서 조회
   async getAllCredentials(params = {}) {

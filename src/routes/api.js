@@ -5,6 +5,7 @@ const CredentialController = require('../controllers/CredentialController');
 const CreditController = require('../controllers/CreditController');
 const UserController = require('../controllers/UserController');
 const PaymentController = require('../controllers/PaymentController');
+const SubscriptionController = require('../controllers/SubscriptionController');
 const WebhookController = require('../controllers/WebhookController');
 const { authenticateToken, requireAdmin, authenticateAPIKey, auditLog } = require('../middleware/auth');
 const { requireCredit } = require('../middleware/creditCheck');
@@ -71,6 +72,14 @@ router.get('/credits', authenticateToken, CreditController.getBalance);
 router.get('/credits/history', authenticateToken, CreditController.getHistory);
 router.get('/credits/plans', CreditController.getPlans);
 router.get('/credits/subscription', authenticateToken, CreditController.getMySubscription);
+
+// 구독 관련 라우트
+router.get('/subscriptions/my', authenticateToken, SubscriptionController.getMySubscription);
+router.post('/subscriptions/cancel', authenticateToken, SubscriptionController.cancelSubscription);
+
+// 구독 관리 API (내부/크론잡용)
+router.post('/subscriptions/renew', SubscriptionController.renewSubscriptions);
+router.post('/subscriptions/expire', SubscriptionController.expireSubscriptions);
 
 // 결제 관련 라우트
 router.post('/payments/prepare/credit', authenticateToken, PaymentController.prepareCreditPayment);
