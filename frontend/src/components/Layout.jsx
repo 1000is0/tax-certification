@@ -52,11 +52,16 @@ export default function Layout({ children }) {
                   label={`${creditBalance.toLocaleString()} 크레딧`}
                   color="secondary"
                   variant="outlined"
+                  component={Link}
+                  to="/credits/history"
+                  clickable
                   sx={{ 
                     mr: 2, 
                     color: '#fff', 
                     borderColor: '#fff',
-                    '& .MuiChip-icon': { color: '#fff' }
+                    '& .MuiChip-icon': { color: '#fff' },
+                    textDecoration: 'none',
+                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
                   }}
                 />
               )}

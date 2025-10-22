@@ -5,6 +5,7 @@ const CredentialController = require('../controllers/CredentialController');
 const CreditController = require('../controllers/CreditController');
 const WebhookController = require('../controllers/WebhookController');
 const { authenticateToken, requireAdmin, authenticateAPIKey, auditLog } = require('../middleware/auth');
+const { requireCredit } = require('../middleware/creditCheck');
 
 const router = express.Router();
 
@@ -61,7 +62,7 @@ router.get('/credentials/:id', authenticateToken, CredentialController.getCreden
 router.put('/credentials/:id', authenticateToken, updateCredentialValidation, auditLog('update', 'credentials'), CredentialController.updateCredential);
 router.delete('/credentials/:id', authenticateToken, auditLog('delete', 'credentials'), CredentialController.deleteCredential);
 router.post('/credentials/:id/deactivate', authenticateToken, auditLog('update', 'credentials'), CredentialController.deactivateCredential);
-router.post('/credentials/test-connection', authenticateToken, clientIdValidation, CredentialController.testConnection);
+router.post('/credentials/test-connection', authenticateToken, clientIdValidation, requireCredit(5, '인증서 연결 테스트'), CredentialController.testConnection);
 
 // 크레딧 관련 라우트
 router.get('/credits', authenticateToken, CreditController.getBalance);

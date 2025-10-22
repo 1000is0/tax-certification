@@ -279,6 +279,16 @@ export const adminService = {
     } catch (error) {
       throw error
     }
+  },
+
+  // 크레딧 지급
+  async grantCredits(data) {
+    try {
+      const response = await api.post('/admin/credits/grant', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
   }
 }
 

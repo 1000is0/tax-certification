@@ -8,6 +8,7 @@ import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import CredentialPage from './pages/CredentialPage'
 import CredentialFormPage from './pages/CredentialFormPage'
+import CreditHistoryPage from './pages/CreditHistoryPage'
 import AdminPage from './pages/AdminPage'
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
                   <Route path="/credentials" element={<CredentialPage />} />
                   <Route path="/credentials/new" element={<CredentialFormPage />} />
                   <Route path="/credentials/:id/edit" element={<CredentialFormPage />} />
+                  <Route path="/credits/history" element={<CreditHistoryPage />} />
                   {user?.role === 'admin' && (
                     <Route path="/admin" element={<AdminPage />} />
                   )}
