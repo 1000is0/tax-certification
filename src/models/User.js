@@ -331,6 +331,8 @@ class User {
       email: this.email,
       name: this.name,
       phone: this.phone,
+      businessNumber: this.businessNumber,
+      companyName: this.companyName,
       role: this.role,
       isActive: this.isActive,
       lastLogin: this.lastLogin,

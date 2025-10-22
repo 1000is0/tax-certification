@@ -238,6 +238,17 @@ export default function RegisterPage() {
               <Grid item xs={12} md={6}>
                 <TextField 
                   fullWidth 
+                  label="상호명" 
+                  value={companyName} 
+                  onChange={e=>setCompanyName(e.target.value)}
+                  error={!!errors.companyName}
+                  helperText={errors.companyName}
+                  placeholder="(주)테스트회사"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField 
+                  fullWidth 
                   label="사업자등록번호" 
                   value={businessNumber} 
                   onChange={e => {
@@ -259,17 +270,6 @@ export default function RegisterPage() {
                   helperText={errors.businessNumber}
                   placeholder="123-45-67890"
                   inputProps={{ maxLength: 12 }} // 123-45-67890 = 12자
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField 
-                  fullWidth 
-                  label="상호명" 
-                  value={companyName} 
-                  onChange={e=>setCompanyName(e.target.value)}
-                  error={!!errors.companyName}
-                  helperText={errors.companyName}
-                  placeholder="(주)테스트회사"
                 />
               </Grid>
               <Grid item xs={12} md={6}>

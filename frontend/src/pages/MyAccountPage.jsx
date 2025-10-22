@@ -21,7 +21,9 @@ export default function MyAccountPage() {
   const [profile, setProfile] = useState({
     email: '',
     name: '',
-    phone: ''
+    phone: '',
+    businessNumber: '',
+    companyName: ''
   })
 
   // 프로필 수정 모드
@@ -178,6 +180,24 @@ export default function MyAccountPage() {
               disabled={!editing}
               placeholder="010-1234-5678"
               inputProps={{ maxLength: 13 }} // 010-1234-5678 = 13자
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="상호명"
+              value={profile.companyName}
+              disabled
+              helperText="상호명은 변경할 수 없습니다."
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="사업자등록번호"
+              value={profile.businessNumber}
+              disabled
+              helperText="사업자등록번호는 변경할 수 없습니다."
             />
           </Grid>
           <Grid item xs={12}>
