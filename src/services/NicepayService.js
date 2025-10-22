@@ -83,8 +83,9 @@ class NicepayService {
     try {
       const requestData = { amount };
 
+      // 나이스페이 신버전 API 승인 엔드포인트 (여러 가능성 시도)
       const response = await axios.post(
-        `${this.apiUrl}/v1/payments/${tid}/approve`,
+        `${this.apiUrl}/v1/payments/${tid}`, // /approve 제거
         requestData,
         { headers: this.getHeaders() }
       );

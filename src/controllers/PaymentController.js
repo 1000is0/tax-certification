@@ -229,10 +229,17 @@ class PaymentController {
    */
   static async approvePayment(req, res) {
     try {
+      console.log('[DEBUG] approvePayment 시작');
+      console.log('[DEBUG] req.user:', req.user);
+      console.log('[DEBUG] req.body:', req.body);
+      
       const userId = req.user.userId;
       const { orderId, tid, amount } = req.body;
 
+      console.log('[DEBUG] 파라미터 추출:', { userId, orderId, tid, amount });
+
       if (!orderId || !tid || !amount) {
+        console.log('[DEBUG] 필수 파라미터 누락');
         return res.status(400).json({
           error: '필수 정보가 누락되었습니다.',
           code: 'MISSING_PARAMETERS'
@@ -240,8 +247,12 @@ class PaymentController {
       }
 
       // 결제 정보 조회
+      console.log('[DEBUG] Payment.findByOrderId 호출:', orderId);
       const payment = await Payment.findByOrderId(orderId);
+      console.log('[DEBUG] Payment 조회 결과:', payment);
+      
       if (!payment) {
+        console.log('[DEBUG] Payment not found');
         return res.status(404).json({
           error: '결제 정보를 찾을 수 없습니다.',
           code: 'PAYMENT_NOT_FOUND'
@@ -278,8 +289,10 @@ class PaymentController {
         });
       }
 
-      // 나이스페이 결제 승인
+      // 나이스페이 결제 승인 (Server 승인 모델)
+      console.log('[DEBUG] 나이스페이 승인 API 호출 시작:', { tid, amount });
       const nicepayResult = await NicepayService.approvePayment({ tid, amount });
+      console.log('[DEBUG] 나이스페이 승인 API 호출 결과:', nicepayResult);
 
       if (!nicepayResult.success) {
         await payment.markAsFailed({
