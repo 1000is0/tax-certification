@@ -18,18 +18,22 @@ export default function PaymentCallbackPage() {
 
   const processPayment = async () => {
     try {
-      // 나이스페이에서 전달한 파라미터 추출
+      // 나이스페이에서 전달한 파라미터 추출 (Server 승인 모델)
       const orderId = searchParams.get('orderId')
       const tid = searchParams.get('tid')
       const amount = searchParams.get('amount')
-      const resultCode = searchParams.get('resultCode')
-      const resultMsg = searchParams.get('resultMsg')
+      const authResultCode = searchParams.get('authResultCode') // Server 승인 모델
+      const authResultMsg = searchParams.get('authResultMsg') // Server 승인 모델
+
+      console.log('[DEBUG] Payment callback params:', { 
+        orderId, tid, amount, authResultCode, authResultMsg 
+      })
 
       // 결제 실패 처리
-      if (resultCode !== '0000') {
+      if (authResultCode && authResultCode !== '0000') {
         setStatus('error')
-        setMessage(resultMsg || '결제에 실패했습니다.')
-        toast.error(resultMsg || '결제에 실패했습니다.')
+        setMessage(authResultMsg || '결제에 실패했습니다.')
+        toast.error(authResultMsg || '결제에 실패했습니다.')
         return
       }
 
