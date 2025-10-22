@@ -78,29 +78,6 @@ class User {
     }
   }
 
-  // 모든 사용자 조회 (관리자용)
-  static async findAll() {
-    try {
-      const result = await query('users', 'select', {
-        columns: 'id, email, name, role, credit_balance, subscription_tier, created_at'
-      });
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      // JavaScript에서 정렬
-      const sortedData = (result.data || []).sort((a, b) => 
-        new Date(b.created_at) - new Date(a.created_at)
-      );
-
-      return sortedData.map(userData => new User(userData));
-    } catch (error) {
-      logError(error, { operation: 'User.findAll' });
-      throw error;
-    }
-  }
-
   // ID로 사용자 조회
   static async findById(id) {
     try {
@@ -124,47 +101,23 @@ class User {
     }
   }
 
-  // 모든 사용자 조회 (페이징)
-  static async findAll(page = 1, limit = 10, filters = {}) {
+  // 모든 사용자 조회 (관리자용)
+  static async findAll() {
     try {
-      const offset = (page - 1) * limit;
-      let whereClause = {};
-
-      if (filters.role) {
-        whereClause.role = filters.role;
-      }
-
-      if (filters.isActive !== undefined) {
-        whereClause.is_active = filters.isActive;
-      }
-
-      // 사용자 목록 조회
-      const usersResult = await query('users', 'select', {
-        where: whereClause,
-        offset,
-        limit,
-        orderBy: 'created_at'
+      const result = await query('users', 'select', {
+        columns: 'id, email, name, role, credit_balance, subscription_tier, created_at'
       });
 
-      if (usersResult.error) {
-        throw usersResult.error;
+      if (result.error) {
+        throw result.error;
       }
 
-      // 전체 개수 조회 (Supabase에서는 별도 쿼리 필요)
-      const countResult = await rpc('get_user_count', { filters: whereClause });
-      const total = countResult || usersResult.data.length;
+      // JavaScript에서 정렬
+      const sortedData = (result.data || []).sort((a, b) => 
+        new Date(b.created_at) - new Date(a.created_at)
+      );
 
-      const users = usersResult.data.map(row => new User(row));
-
-      return {
-        users,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit)
-        }
-      };
+      return sortedData.map(userData => new User(userData));
     } catch (error) {
       logError(error, { operation: 'User.findAll' });
       throw error;
