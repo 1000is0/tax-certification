@@ -16,6 +16,8 @@ class PaymentController {
       const userId = req.user.userId;
       const { creditPackId, credits, price } = req.body;
 
+      logger.info('크레딧 결제 준비 시작', { userId, creditPackId, credits, price });
+
       if (!creditPackId || !credits || !price) {
         return res.status(400).json({
           error: '필수 정보가 누락되었습니다.',
@@ -27,7 +29,10 @@ class PaymentController {
       const orderId = `CREDIT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const orderName = `크레딧 구매 (${credits}개)`;
 
+      logger.info('주문 ID 생성 완료', { orderId });
+
       // 결제 정보 저장
+      logger.info('Payment.create 호출 전');
       const payment = await Payment.create({
         userId,
         orderId,
@@ -37,9 +42,11 @@ class PaymentController {
         relatedId: creditPackId,
         metadata: { credits }
       });
+      logger.info('Payment.create 완료', { paymentId: payment.id });
 
       // 나이스페이 결제 준비 (카드만 허용)
       const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/callback`;
+      logger.info('NicepayService.preparePayment 호출 전', { orderId, amount: price });
       const nicepayResult = await NicepayService.preparePayment({
         orderId,
         amount: price,
@@ -48,6 +55,7 @@ class PaymentController {
         mallUserId: userId,
         directPayMethod: 'CARD' // 카드 결제만 허용
       });
+      logger.info('NicepayService.preparePayment 완료', { success: nicepayResult.success });
 
       if (!nicepayResult.success) {
         await payment.markAsFailed({
