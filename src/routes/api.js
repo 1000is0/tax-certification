@@ -91,6 +91,9 @@ router.post('/webhook/log', authenticateAPIKey, WebhookController.logWebhookCall
 router.get('/webhook/health', authenticateAPIKey, WebhookController.healthCheck);
 router.post('/webhook/test', authenticateAPIKey, WebhookController.testScenario);
 
+// 나이스페이 웹훅 (인증 불필요 - 나이스페이 서버에서 직접 호출)
+router.post('/webhook/nicepay', WebhookController.nicepayWebhook);
+
 // 헬스 체크
 router.get('/health', (req, res) => {
   res.json({ 

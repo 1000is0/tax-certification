@@ -140,7 +140,10 @@ class PaymentController {
         amount: tierConfig.price,
         goodsName: orderName,
         returnUrl,
-        mallUserId: userId
+        mallUserId: userId,
+        // 구독은 카드만 허용 (가상계좌 제외)
+        useEscrow: false,
+        directPayMethod: 'CARD' // 카드 결제만 허용
       });
 
       if (!nicepayResult.success) {

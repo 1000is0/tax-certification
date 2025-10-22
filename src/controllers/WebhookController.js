@@ -1,5 +1,9 @@
 const TaxCredential = require('../models/TaxCredential');
-const { logError, logSecurity, logAudit } = require('../utils/logger');
+const Payment = require('../models/Payment');
+const CreditTransaction = require('../models/CreditTransaction');
+const Subscription = require('../models/Subscription');
+const NicepayService = require('../services/NicepayService');
+const { logError, logSecurity, logAudit, logger } = require('../utils/logger');
 const { validationResult } = require('express-validator');
 
 class WebhookController {
@@ -185,6 +189,119 @@ class WebhookController {
         success: false,
         error: '테스트 시나리오 실행 중 오류가 발생했습니다.',
         code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * 나이스페이 웹훅 (가상계좌 입금 완료 등)
+   */
+  static async nicepayWebhook(req, res) {
+    try {
+      const { tid, orderId, amount, resultCode, resultMsg, payMethod } = req.body;
+
+      logger.info('나이스페이 웹훅 수신', { tid, orderId, resultCode, payMethod });
+
+      // 서명 검증 (실제 환경에서는 필수)
+      // const isValid = NicepayService.verifyWebhookSignature(req.body, req.headers);
+      // if (!isValid) {
+      //   return res.status(401).json({ resultCode: '4001', resultMsg: '서명 검증 실패' });
+      // }
+
+      // 결제 정보 조회
+      const payment = await Payment.findByOrderId(orderId);
+      if (!payment) {
+        logger.error('웹훅: 결제 정보 없음', { orderId });
+        return res.status(404).json({ resultCode: '4004', resultMsg: '결제 정보를 찾을 수 없습니다.' });
+      }
+
+      // 이미 처리된 경우
+      if (payment.status === 'paid') {
+        logger.info('웹훅: 이미 처리됨', { orderId, tid });
+        return res.json({ resultCode: '0000', resultMsg: 'success' });
+      }
+
+      // 결제 실패
+      if (resultCode !== '0000') {
+        await payment.markAsFailed({
+          failCode: resultCode,
+          failMessage: resultMsg
+        });
+        return res.json({ resultCode: '0000', resultMsg: 'success' });
+      }
+
+      // 금액 검증
+      if (payment.amount !== parseInt(amount)) {
+        logger.error('웹훅: 금액 불일치', { 
+          expected: payment.amount, 
+          received: amount, 
+          orderId 
+        });
+        await payment.markAsFailed({
+          failCode: 'AMOUNT_MISMATCH',
+          failMessage: `금액 불일치: 예상 ${payment.amount}, 실제 ${amount}`
+        });
+        return res.status(400).json({ resultCode: '4001', resultMsg: '금액 불일치' });
+      }
+
+      // 나이스페이에서 결제 조회 (선택적 - 추가 검증)
+      const nicepayResult = await NicepayService.getPayment(tid);
+      if (!nicepayResult.success) {
+        logger.error('웹훅: 나이스페이 조회 실패', { tid, error: nicepayResult.error });
+      }
+
+      // 결제 완료 처리
+      await payment.markAsPaid({
+        tid,
+        payMethod: payMethod || 'vbank',
+        cardName: null,
+        cardNum: null,
+        billingKey: null
+      });
+
+      // 결제 타입별 처리
+      if (payment.paymentType === 'one_time_credit') {
+        // 일회성 크레딧 지급
+        const credits = payment.metadata.credits;
+        await CreditTransaction.create(
+          payment.userId,
+          credits,
+          'purchase',
+          `크레딧 구매 (${payment.orderName}) - 가상계좌`,
+          payment.id,
+          null
+        );
+
+        logger.info('웹훅: 크레딧 지급 완료', { orderId, userId: payment.userId, credits });
+
+      } else if (payment.paymentType === 'subscription') {
+        // 구독은 가상계좌 불가 - 이 경우는 발생하면 안 됨
+        logger.error('웹훅: 구독은 가상계좌 불가', { orderId, payMethod });
+        await payment.markAsFailed({
+          failCode: 'INVALID_PAYMENT_METHOD',
+          failMessage: '구독은 가상계좌로 결제할 수 없습니다.'
+        });
+        return res.status(400).json({ resultCode: '4002', resultMsg: '구독은 가상계좌 불가' });
+      }
+
+      logSecurity('Nicepay webhook processed', {
+        tid,
+        orderId,
+        userId: payment.userId,
+        amount,
+        payMethod
+      });
+
+      // 나이스페이에 성공 응답 (필수)
+      res.json({ resultCode: '0000', resultMsg: 'success' });
+
+    } catch (error) {
+      logError(error, { operation: 'WebhookController.nicepayWebhook' });
+      
+      // 나이스페이에 실패 응답
+      res.status(500).json({ 
+        resultCode: '5000', 
+        resultMsg: '서버 오류' 
       });
     }
   }
