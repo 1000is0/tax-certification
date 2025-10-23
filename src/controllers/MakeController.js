@@ -152,6 +152,253 @@ class MakeController {
       });
     }
   }
+
+  /**
+   * Phase 1: 크레딧 검증 + 인증서 제공 (차감 없음)
+   */
+  static async validateCredits(req, res) {
+    try {
+      const { businessNumber, companyName, requiredCredits, requestType } = req.body;
+
+      // 입력 검증
+      if (!businessNumber || !companyName || !requiredCredits) {
+        return res.status(400).json({
+          success: false,
+          error: 'MISSING_PARAMETERS',
+          message: '사업자등록번호, 상호명, 필요 크레딧을 모두 입력해주세요.'
+        });
+      }
+
+      if (requestType && !['basic', 'with_certificate'].includes(requestType)) {
+        return res.status(400).json({
+          success: false,
+          error: 'INVALID_REQUEST_TYPE',
+          message: 'requestType은 basic 또는 with_certificate이어야 합니다.'
+        });
+      }
+
+      // 사용자 조회
+      const user = await User.findByBusinessInfo(businessNumber, companyName);
+      if (!user) {
+        logAudit('Make validation failed: User not found', {
+          businessNumber,
+          companyName,
+          ip: req.ip,
+          userAgent: req.get('User-Agent')
+        });
+
+        return res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: '일치하는 회원 정보가 없습니다.'
+        });
+      }
+
+      // 계정 활성화 확인
+      if (!user.isActive) {
+        logAudit('Make validation failed: Account deactivated', {
+          userId: user.id,
+          businessNumber,
+          companyName,
+          ip: req.ip
+        });
+
+        return res.status(403).json({
+          success: false,
+          error: 'ACCOUNT_DEACTIVATED',
+          message: '비활성화된 계정입니다.'
+        });
+      }
+
+      // 크레딧 잔액 확인
+      if (user.creditBalance < requiredCredits) {
+        logAudit('Make validation failed: Insufficient credits', {
+          userId: user.id,
+          businessNumber,
+          companyName,
+          requiredCredits,
+          currentBalance: user.creditBalance,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'INSUFFICIENT_CREDITS',
+          message: '크레딧이 부족합니다.',
+          requiredCredits,
+          currentBalance: user.creditBalance
+        });
+      }
+
+      const response = {
+        success: true,
+        message: '크레딧 충분',
+        currentBalance: user.creditBalance,
+        requiredCredits,
+        userId: user.id,
+        companyName: user.companyName
+      };
+
+      // 인증서 정보가 필요한 경우
+      if (requestType === 'with_certificate') {
+        const credential = await TaxCredential.findByClientId(businessNumber);
+        if (!credential) {
+          return res.status(404).json({
+            success: false,
+            error: 'CERTIFICATE_NOT_FOUND',
+            message: '등록된 인증서가 없습니다.'
+          });
+        }
+
+        // 인증서 정보 복호화
+        const decryptedResult = await TaxCredential.decryptByClientId(businessNumber);
+        if (!decryptedResult) {
+          return res.status(500).json({
+            success: false,
+            error: 'CERTIFICATE_DECRYPTION_FAILED',
+            message: '인증서 정보 복호화에 실패했습니다.'
+          });
+        }
+
+        response.certificateData = {
+          certData: decryptedResult.decryptedData.certData,
+          privateKey: decryptedResult.decryptedData.privateKey,
+          certPassword: decryptedResult.decryptedData.certPassword
+        };
+      }
+
+      logAudit('Make validation successful', {
+        userId: user.id,
+        businessNumber,
+        companyName,
+        requiredCredits,
+        requestType,
+        ip: req.ip
+      });
+
+      res.json(response);
+
+    } catch (error) {
+      logError(error, { operation: 'MakeController.validateCredits' });
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: '서버 내부 오류가 발생했습니다.'
+      });
+    }
+  }
+
+  /**
+   * Phase 2: 크레딧 차감 + 로그 기록
+   */
+  static async completeTask(req, res) {
+    try {
+      const { businessNumber, companyName, requiredCredits, taskName } = req.body;
+
+      // 입력 검증
+      if (!businessNumber || !companyName || !requiredCredits || !taskName) {
+        return res.status(400).json({
+          success: false,
+          error: 'MISSING_PARAMETERS',
+          message: '사업자등록번호, 상호명, 필요 크레딧, 작업명을 모두 입력해주세요.'
+        });
+      }
+
+      // 사용자 조회
+      const user = await User.findByBusinessInfo(businessNumber, companyName);
+      if (!user) {
+        logAudit('Make completion failed: User not found', {
+          businessNumber,
+          companyName,
+          ip: req.ip,
+          userAgent: req.get('User-Agent')
+        });
+
+        return res.status(404).json({
+          success: false,
+          error: 'USER_NOT_FOUND',
+          message: '일치하는 회원 정보가 없습니다.'
+        });
+      }
+
+      // 계정 활성화 확인
+      if (!user.isActive) {
+        logAudit('Make completion failed: Account deactivated', {
+          userId: user.id,
+          businessNumber,
+          companyName,
+          ip: req.ip
+        });
+
+        return res.status(403).json({
+          success: false,
+          error: 'ACCOUNT_DEACTIVATED',
+          message: '비활성화된 계정입니다.'
+        });
+      }
+
+      // 크레딧 잔액 재확인
+      if (user.creditBalance < requiredCredits) {
+        logAudit('Make completion failed: Insufficient credits', {
+          userId: user.id,
+          businessNumber,
+          companyName,
+          requiredCredits,
+          currentBalance: user.creditBalance,
+          ip: req.ip
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: 'INSUFFICIENT_CREDITS',
+          message: '크레딧이 부족합니다.',
+          requiredCredits,
+          currentBalance: user.creditBalance
+        });
+      }
+
+      // 크레딧 차감
+      await CreditTransaction.create({
+        userId: user.id,
+        amount: -requiredCredits,
+        type: 'usage',
+        description: taskName,
+        relatedId: null,
+        expiresAt: null
+      });
+
+      // 사용자 크레딧 잔액 업데이트
+      await User.updateCreditBalance(user.id, user.creditBalance - requiredCredits);
+
+      const response = {
+        success: true,
+        message: '작업 완료',
+        creditsUsed: requiredCredits,
+        remainingCredits: user.creditBalance - requiredCredits,
+        userId: user.id,
+        companyName: user.companyName
+      };
+
+      logAudit('Make task completion successful', {
+        userId: user.id,
+        businessNumber,
+        companyName,
+        creditsUsed: requiredCredits,
+        taskName,
+        ip: req.ip
+      });
+
+      res.json(response);
+
+    } catch (error) {
+      logError(error, { operation: 'MakeController.completeTask' });
+      res.status(500).json({
+        success: false,
+        error: 'INTERNAL_SERVER_ERROR',
+        message: '서버 내부 오류가 발생했습니다.'
+      });
+    }
+  }
 }
 
 module.exports = MakeController;

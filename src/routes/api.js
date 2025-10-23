@@ -117,6 +117,8 @@ router.post('/webhook/test', authenticateAPIKey, WebhookController.testScenario)
 
 // Make 연동 API
 router.post('/make/execute', MakeController.executeWorkflow);
+router.post('/make/validate', MakeController.validateCredits);
+router.post('/make/complete', MakeController.completeTask);
 
 // 헬스 체크
 router.get('/health', (req, res) => {
