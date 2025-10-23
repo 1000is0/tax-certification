@@ -10,7 +10,7 @@ class MakeController {
    */
   static async executeWorkflow(req, res) {
     try {
-      const { businessNumber, companyName, requiredCredits, requestType } = req.body;
+      const { businessNumber, companyName, requiredCredits, requestType, taskName } = req.body;
 
       // 입력 검증
       if (!businessNumber || !companyName || !requiredCredits) {
@@ -87,7 +87,7 @@ class MakeController {
         userId: user.id,
         amount: -requiredCredits,
         type: 'usage',
-        description: `Make 워크플로우 실행 (${companyName})`,
+        description: taskName || `Make 워크플로우 실행 (${companyName})`,
         relatedId: null,
         expiresAt: null
       });
@@ -137,6 +137,7 @@ class MakeController {
         companyName,
         creditsUsed: requiredCredits,
         requestType,
+        taskName,
         ip: req.ip
       });
 
